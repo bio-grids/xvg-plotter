@@ -81,6 +81,15 @@ if selected2 == "Single File Analysis":
                 )
 
 footer = """<style>
+    p {
+        margin: 0;
+    }
+    
+    a {
+        display: block;
+        text-align: center;
+    }
+    
     a:link, a:visited {
         color: blue;
         background-color: transparent;
@@ -105,7 +114,9 @@ footer = """<style>
 </style>
 
 <div class="footer">
-    <p>XVG Plotter, Version 0.1.0 <a style='display: block; text-align: center;' href="https://www.linkedin.com/in/dilwarhossain" target="_blank">Dilwar Hossain Noor</a></p>
+    <p>XVG Plotter, Version 0.1.0</p>
+    <p><a href="https://www.linkedin.com/in/dilwarhossain" target="_blank">Dilwar Hossain Noor</a></p>
+    <p><a href="https://github.com/bio-grids/xvg-plotter" target="_blank">GitHub</a></p>
 </div>
 """
 
