@@ -47,8 +47,6 @@ if selected == "Single File Analysis":
             size_columns = st.columns([1])
             label_size = size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16)
 
-            print(file_name, x_label, y_label, x_index, y_index, label_size)
-
             st.form_submit_button('Plot XVG')
 
             if file_name and x_label and y_label and label_size:
@@ -123,7 +121,6 @@ elif selected == "Folder Analysis":
                     xvg = os.path.join(project_folder, xvg_file)
 
                     xvg_file_name = os.path.splitext(xvg_file)[0]
-                    print("file name", xvg_file_name)
 
                     file_name_columns = st.columns([1])
                     file_name = file_name_columns[0].text_input(label="File Name", value=xvg_file_name)
@@ -139,8 +136,6 @@ elif selected == "Folder Analysis":
                     size_columns = st.columns([1])
                     label_size = size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1,
                                                         value=16)
-
-                    print(file_name, x_label, y_label, x_index, y_index, label_size)
 
                     if st.button("Plot XVG"):
                         if file_name and x_label and y_label and label_size:
