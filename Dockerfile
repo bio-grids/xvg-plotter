@@ -4,9 +4,9 @@ LABEL authors="Dilwar Hossain Noor"
 
 WORKDIR /app
 
-COPY environment.yml .
+COPY environment-linux.yml .
 
-RUN conda env create -f environment.yml
+RUN conda env create -f environment-linux.yml
 
 #SHELL ["conda", "run", "-n", "xvg-plotter", "/bin/bash", "-c"]
 
