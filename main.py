@@ -73,7 +73,7 @@ if selected == "Single File Analysis":
                 st.pyplot(plt)
 
                 btn = st.download_button(
-                    label="Download Graph",
+                    label="Download Plot",
                     data=img,
                     file_name=f"{file_name}.png",
                     mime="image/png"
@@ -165,7 +165,7 @@ elif selected == "Folder Analysis":
                 st.pyplot(plt)
 
                 btn = st.download_button(
-                    label="Download Graph",
+                    label="Download Plot",
                     data=img,
                     file_name=f"{file_name}.png",
                     mime="image/png"
@@ -204,7 +204,7 @@ footer = """<style>
 </style>
 
 <div class="footer">
-    <p>XVG Plotter, Version 0.2.0</p>
+    <p>XVG Plotter, Version 0.2.1</p>
     <p><a href="https://www.linkedin.com/in/dilwarhossain" target="_blank">Dilwar Hossain Noor</a></p>
     <p><a href="https://github.com/bio-grids/xvg-plotter" target="_blank">GitHub</a>, <a href="https://hub.docker.com/r/firesimulations/xvg-plotter" target="_blank">DockerHub</a></p>
 </div>
