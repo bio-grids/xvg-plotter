@@ -70,3 +70,9 @@ def parse_xvg(data: str, columns: list[int] | None = None) -> tuple[Metadata, np
         metadata['labels']['series'] = [metadata['labels']['series'][col - 1] for col in sel_columns[1:]]
 
     return metadata, data
+
+
+legend_locations = [
+    "best", "upper right", "upper left", "lower left", "lower right", "right", "center left", "center right",
+    "lower center", "upper center", "center"
+]
