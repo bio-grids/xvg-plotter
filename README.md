@@ -60,15 +60,15 @@ You can plot XVG file singly or select folder for ease selection.
 
 ### Single File Analysis
 
-![Single File Analysis - Full View](images%2F01.png)
+![Single File Analysis - Full View](images%2F03.png)
 
 #### Options
 
 1. File Name: File name for saving
-2. X Label: X axis label. You can give equation by adding $. for example: `Density ($m^3$)`
-3. Y Label: X axis label.
-4. X Index: Index of XVG file data for plotting in X axis.
-5. Y Index: Index of XVG file data for plotting in Y axis.
+2. Select X Axis: Select X axis from radio button group.
+3. Select Y Axis: Select Y axis from radio button group.
+4. X Label: X axis label. You can give equation by adding $. for example: `Density ($m^3$)`
+5. Y Label: X axis label.
 6. Label Size: Label font size of X and Y axes. You can select `12` to `24`.
 7. Plot XVG: Button for plotting.
 8. Download Plot: Button for downloading image.
