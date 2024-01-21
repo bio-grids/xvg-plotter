@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_option_menu import option_menu
 
-from utils import parse_xvg
+from utils import parse_xvg, legend_locations
 
 st.set_page_config(layout="wide", page_title="XVG Plotter")
 
@@ -15,10 +15,18 @@ if "single_file_name" not in st.session_state:
     st.session_state.single_file_name = None
 if "single_title" not in st.session_state:
     st.session_state.single_title = None
+if "single_title_size" not in st.session_state:
+    st.session_state.single_title_size = 20
+if "single_title_show" not in st.session_state:
+    st.session_state.single_title_show = False
+if "single_title_loc" not in st.session_state:
+    st.session_state.single_title_loc = "center"
 if "single_xaxis" not in st.session_state:
     st.session_state.single_xaxis = None
 if "single_yaxis" not in st.session_state:
     st.session_state.single_yaxis = None
+if "single_yaxes" not in st.session_state:
+    st.session_state.single_yaxes = []
 if "single_x_index" not in st.session_state:
     st.session_state.single_x_index = 0
 if "single_y_index" not in st.session_state:
@@ -27,6 +35,12 @@ if "single_xvg_file_name" not in st.session_state:
     st.session_state.single_xvg_file_name = None
 if "single_label_size" not in st.session_state:
     st.session_state.single_label_size = 16
+if "single_legend_show" not in st.session_state:
+    st.session_state.single_legend_show = False
+if "single_legend_loc" not in st.session_state:
+    st.session_state.single_legend_loc = "best"
+if "single_legend_size" not in st.session_state:
+    st.session_state.single_legend_size = 14
 if "single_series" not in st.session_state:
     st.session_state.single_series = []
 
@@ -50,8 +64,7 @@ if selected == "Single File Analysis":
     wrapper_columns = st.columns([3, 2])
 
     with wrapper_columns[0]:
-        # with st.form("xvg_form"):
-        files = st.columns([3, 2])
+        files = st.columns([1])
         xvg = files[0].file_uploader(label="Upload XVG File", accept_multiple_files=False, type=["xvg"])
 
         if xvg is not None:
@@ -63,10 +76,6 @@ if selected == "Single File Analysis":
 
             metadata, data = parse_xvg(string_data)
 
-            # print(data.shape)
-            # print(metadata["title"])
-            # print(metadata["labels"]["series"])
-
             st.session_state.single_title = metadata["title"]
             st.session_state.single_series = metadata["labels"]["series"]
             st.session_state.single_xaxis = metadata["labels"]["xaxis"]
@@ -74,32 +83,61 @@ if selected == "Single File Analysis":
             st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
 
         file_name_columns = st.columns([1])
-        file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name, key="single_file_name")
+        file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name,
+                                        key="single_file_name")
 
-        axis_columns = st.columns([1, 1])
-        x_index_ = axis_columns[0].radio("Select X Axis", [st.session_state.single_xaxis] + st.session_state.single_series, index=0)
-        # y_index_ = axis_columns[1].multiselect(
-        #     'Select Y Axes',
-        #     ["Time"] + series,
-        # )
-        y_index_ = axis_columns[1].radio("Select Y Axis", [st.session_state.single_xaxis] + st.session_state.single_series, index=1 if len(st.session_state.single_series) else 0)
+        axis_columns = st.columns([1, 2])
+        x_index_ = axis_columns[0].radio("Select X Axis",
+                                         [st.session_state.single_xaxis] + st.session_state.single_series, index=0)
+        y_index__ = axis_columns[1].multiselect(
+            'Select Y Axes',
+            [st.session_state.single_xaxis] + st.session_state.single_series,
+            default=([st.session_state.single_xaxis] + st.session_state.single_series)[
+                1 if len(st.session_state.single_series) else 0]
+        )
 
-        label_columns = st.columns([1, 1])
-        label_columns[0].text_input(label="X Label", key="single_xaxis")
-        label_columns[1].text_input(label="Y Label", key="single_yaxis")
+        st.session_state.single_x_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(
+            x_index_)
+        st.session_state.single_yaxes = list(
+            map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z), y_index__))
 
-        st.session_state.single_x_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(x_index_)
-        st.session_state.single_y_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(y_index_)
+        with st.expander("Labels"):
+            label_columns = st.columns([1, 1])
+            label_columns[0].text_input(label="X Label", key="single_xaxis")
+            label_columns[1].text_input(label="Y Label", key="single_yaxis")
 
-        size_columns = st.columns([1])
-        size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16, key="single_label_size")
+            size_columns = st.columns([1])
+            size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
+                                   key="single_label_size")
+
+        with st.expander("Title"):
+            title_columns = st.columns([1, 1, 1])
+            title_columns[0].checkbox(label="Show Title", key="single_title_show")
+            title_columns[0].text_input(label="Title", key="single_title")
+            title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
+                                    key="single_title_size")
+            title_columns[2].selectbox(label="Title Location", key="single_title_loc",
+                                       options=["center", "left", "right"], index=0)
+
+        with st.expander("Legends"):
+            legend_columns = st.columns([1, 1, 1])
+            legend_columns[0].checkbox(label="Show Legend", key="single_legend_show")
+            legend_columns[1].slider(label="Legend Size", min_value=12, max_value=24, step=1, value=14,
+                                     key="single_legend_size")
+            legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc", options=legend_locations,
+                                        index=0)
 
         if st.button("Plot XVG"):
             if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
-                x = data[..., st.session_state.single_x_index]
-                y = data[..., st.session_state.single_y_index]
+                for y in st.session_state.single_yaxes:
+                    plt.plot(data[..., st.session_state.single_x_index], data[..., y])
 
-                plt.plot(x, y)
+                if st.session_state.single_legend_show:
+                    plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
+                               fontsize=st.session_state.single_legend_size)
+                if st.session_state.single_title_show:
+                    plt.title(label=st.session_state.single_title, loc=st.session_state.single_title_loc,
+                              fontdict={"fontsize": st.session_state.single_title_size}, pad=16)
                 plt.xlabel(fr"{st.session_state.single_xaxis}", fontsize=st.session_state.single_label_size)
                 plt.ylabel(fr"{st.session_state.single_yaxis}", fontsize=st.session_state.single_label_size)
                 plt.savefig(st.session_state.single_img, format='png', dpi=600)
@@ -107,14 +145,14 @@ if selected == "Single File Analysis":
     with wrapper_columns[1]:
         with st.container(border=True):
             if st.session_state.single_img and st.session_state.single_file_name:
-                st.pyplot(plt)
-
                 st.download_button(
                     label="Download Plot",
                     data=st.session_state.single_img,
                     file_name=f"{st.session_state.single_file_name}.png",
                     mime="image/png"
                 )
+
+                st.pyplot(plt)
 
 elif selected == "Folder Analysis":
     img = BytesIO()
@@ -240,7 +278,7 @@ You can plot XVG file singly or select folder for ease selection.
 3. Other options are same as Single File Analysis.
     """, unsafe_allow_html=True)
 
-st.write(st.session_state)
+# st.write(st.session_state)
 
 footer = """<style>
     p {
