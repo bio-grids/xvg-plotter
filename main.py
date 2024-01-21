@@ -24,8 +24,8 @@ hide_st_style = """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 selected = option_menu(
-    None, ["Single File Analysis", "Folder Analysis"],
-    icons=['cloud-upload', "list-task"],
+    None, ["Single File Analysis", "Folder Analysis", "Documentation"],
+    icons=['cloud-upload', "list-task", "file-earmark-medical"],
     menu_icon="cast", default_index=0, orientation="horizontal"
 )
 
@@ -262,6 +262,38 @@ elif selected == "Folder Analysis":
                     file_name=f"{file_name}.png",
                     mime="image/png"
                 )
+
+elif selected == "Documentation":
+    st.markdown("""
+# Usage
+
+You can plot XVG file singly or select folder for ease selection.
+
+## Single File Analysis
+
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/03.png" alt="Single File Analysis - Full View" width="100%" height="auto">
+
+### Options
+
+1. File Name: File name for saving
+2. Select X Axis: Select X axis from radio button group.
+3. Select Y Axis: Select Y axis from radio button group.
+4. X Label: X axis label. You can give equation by adding \$. for example: `Density ($m^3$)`
+5. Y Label: X axis label.
+6. Label Size: Label font size of X and Y axes. You can select `12` to `24`.
+7. Plot XVG: Button for plotting.
+8. Download Plot: Button for downloading image.
+
+## Folder Analysis
+
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/02.png" alt="Folder Analysis - Full View" width="100%" height="auto">
+
+### Options
+
+1. Put Project Folder: After copy and pasting project folder path, click Submit button. It will show success or error message after validating the path.
+2. Select XVG File: All xvg file in the project folder will be populated here.
+3. Other options are same as Single File Analysis.
+    """, unsafe_allow_html=True)
 
 footer = """<style>
     p {
