@@ -43,6 +43,8 @@ if "single_legend_size" not in st.session_state:
     st.session_state.single_legend_size = 12
 if "single_series" not in st.session_state:
     st.session_state.single_series = []
+if "single_plot_show" not in st.session_state:
+    st.session_state.single_plot_show = False
 
 hide_st_style = """
 <style>
@@ -142,10 +144,15 @@ if selected == "Single File Analysis":
                 plt.ylabel(fr"{st.session_state.single_yaxis}", fontsize=st.session_state.single_label_size)
                 plt.savefig(st.session_state.single_img, format='png', dpi=600)
 
+                st.session_state.single_plot_show = True
+
     with wrapper_columns[1]:
         with st.container(border=True):
-            if st.session_state.single_img and st.session_state.single_file_name:
-                st.download_button(
+            plot_columns = st.columns([2, 1])
+            plot_columns[0].subheader("Plot Visualization")
+
+            if st.session_state.single_img and st.session_state.single_file_name and st.session_state.single_plot_show:
+                plot_columns[1].download_button(
                     label="Download Plot",
                     data=st.session_state.single_img,
                     file_name=f"{st.session_state.single_file_name}.png",
