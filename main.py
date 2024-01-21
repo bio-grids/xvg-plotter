@@ -40,7 +40,7 @@ if "single_legend_show" not in st.session_state:
 if "single_legend_loc" not in st.session_state:
     st.session_state.single_legend_loc = "best"
 if "single_legend_size" not in st.session_state:
-    st.session_state.single_legend_size = 14
+    st.session_state.single_legend_size = 12
 if "single_series" not in st.session_state:
     st.session_state.single_series = []
 
@@ -122,7 +122,7 @@ if selected == "Single File Analysis":
         with st.expander("Legends"):
             legend_columns = st.columns([1, 1, 1])
             legend_columns[0].checkbox(label="Show Legend", key="single_legend_show")
-            legend_columns[1].slider(label="Legend Size", min_value=12, max_value=24, step=1, value=14,
+            legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
                                      key="single_legend_size")
             legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc", options=legend_locations,
                                         index=0)
