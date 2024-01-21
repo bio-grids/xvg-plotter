@@ -66,85 +66,86 @@ if selected == "Single File Analysis":
     wrapper_columns = st.columns([3, 2])
 
     with wrapper_columns[0]:
-        files = st.columns([1])
-        xvg = files[0].file_uploader(label="Upload XVG File", accept_multiple_files=False, type=["xvg"])
+        with st.container(border=True):
+            files = st.columns([1])
+            xvg = files[0].file_uploader(label="Upload XVG File", accept_multiple_files=False, type=["xvg"])
 
-        if xvg is not None:
-            stringio = StringIO(xvg.getvalue().decode("utf-8"))
+            if xvg is not None:
+                stringio = StringIO(xvg.getvalue().decode("utf-8"))
 
-            string_data = stringio.read()
+                string_data = stringio.read()
 
-            file_lines = string_data.split("\n")
+                file_lines = string_data.split("\n")
 
-            metadata, data = parse_xvg(string_data)
+                metadata, data = parse_xvg(string_data)
 
-            st.session_state.single_title = metadata["title"]
-            st.session_state.single_series = metadata["labels"]["series"]
-            st.session_state.single_xaxis = metadata["labels"]["xaxis"]
-            st.session_state.single_yaxis = metadata["labels"]["yaxis"]
-            st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
+                st.session_state.single_title = metadata["title"]
+                st.session_state.single_series = metadata["labels"]["series"]
+                st.session_state.single_xaxis = metadata["labels"]["xaxis"]
+                st.session_state.single_yaxis = metadata["labels"]["yaxis"]
+                st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
 
-        file_name_columns = st.columns([1])
-        file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name,
-                                        key="single_file_name")
+                file_name_columns = st.columns([1])
+                file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name,
+                                                key="single_file_name")
 
-        axis_columns = st.columns([1, 2])
-        x_index_ = axis_columns[0].radio("Select X Axis",
-                                         [st.session_state.single_xaxis] + st.session_state.single_series, index=0)
-        y_index__ = axis_columns[1].multiselect(
-            'Select Y Axes',
-            [st.session_state.single_xaxis] + st.session_state.single_series,
-            default=([st.session_state.single_xaxis] + st.session_state.single_series)[
-                1 if len(st.session_state.single_series) else 0]
-        )
+                axis_columns = st.columns([1, 2])
+                x_index_ = axis_columns[0].radio("Select X Axis",
+                                                 [st.session_state.single_xaxis] + st.session_state.single_series, index=0)
+                y_index__ = axis_columns[1].multiselect(
+                    'Select Y Axes',
+                    [st.session_state.single_xaxis] + st.session_state.single_series,
+                    default=([st.session_state.single_xaxis] + st.session_state.single_series)[
+                        1 if len(st.session_state.single_series) else 0]
+                )
 
-        st.session_state.single_x_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(
-            x_index_)
-        st.session_state.single_yaxes = list(
-            map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z), y_index__))
+                st.session_state.single_x_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(
+                    x_index_)
+                st.session_state.single_yaxes = list(
+                    map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z), y_index__))
 
-        with st.expander("Labels"):
-            label_columns = st.columns([1, 1])
-            label_columns[0].text_input(label="X Label", key="single_xaxis")
-            label_columns[1].text_input(label="Y Label", key="single_yaxis")
+                with st.expander("Labels"):
+                    label_columns = st.columns([1, 1])
+                    label_columns[0].text_input(label="X Label", key="single_xaxis")
+                    label_columns[1].text_input(label="Y Label", key="single_yaxis")
 
-            size_columns = st.columns([1])
-            size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
-                                   key="single_label_size")
+                    size_columns = st.columns([1])
+                    size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
+                                           key="single_label_size")
 
-        with st.expander("Title"):
-            title_columns = st.columns([1, 1, 1])
-            title_columns[0].checkbox(label="Show Title", key="single_title_show")
-            title_columns[0].text_input(label="Title", key="single_title")
-            title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
-                                    key="single_title_size")
-            title_columns[2].selectbox(label="Title Location", key="single_title_loc",
-                                       options=["center", "left", "right"], index=0)
+                with st.expander("Title"):
+                    title_columns = st.columns([1, 1, 1])
+                    title_columns[0].checkbox(label="Show Title", key="single_title_show")
+                    title_columns[0].text_input(label="Title", key="single_title")
+                    title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
+                                            key="single_title_size")
+                    title_columns[2].selectbox(label="Title Location", key="single_title_loc",
+                                               options=["center", "left", "right"], index=0)
 
-        with st.expander("Legends"):
-            legend_columns = st.columns([1, 1, 1])
-            legend_columns[0].checkbox(label="Show Legend", key="single_legend_show")
-            legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
-                                     key="single_legend_size")
-            legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc", options=legend_locations,
-                                        index=0)
+                with st.expander("Legends"):
+                    legend_columns = st.columns([1, 1, 1])
+                    legend_columns[0].checkbox(label="Show Legend", key="single_legend_show")
+                    legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
+                                             key="single_legend_size")
+                    legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc", options=legend_locations,
+                                                index=0)
 
-        if st.button("Plot XVG"):
-            if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
-                for y in st.session_state.single_yaxes:
-                    plt.plot(data[..., st.session_state.single_x_index], data[..., y])
+                if st.button("Plot XVG"):
+                    if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
+                        for y in st.session_state.single_yaxes:
+                            plt.plot(data[..., st.session_state.single_x_index], data[..., y])
 
-                if st.session_state.single_legend_show:
-                    plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
-                               fontsize=st.session_state.single_legend_size)
-                if st.session_state.single_title_show:
-                    plt.title(label=st.session_state.single_title, loc=st.session_state.single_title_loc,
-                              fontdict={"fontsize": st.session_state.single_title_size}, pad=16)
-                plt.xlabel(fr"{st.session_state.single_xaxis}", fontsize=st.session_state.single_label_size)
-                plt.ylabel(fr"{st.session_state.single_yaxis}", fontsize=st.session_state.single_label_size)
-                plt.savefig(st.session_state.single_img, format='png', dpi=600)
+                        if st.session_state.single_legend_show:
+                            plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
+                                       fontsize=st.session_state.single_legend_size)
+                        if st.session_state.single_title_show:
+                            plt.title(label=st.session_state.single_title, loc=st.session_state.single_title_loc,
+                                      fontdict={"fontsize": st.session_state.single_title_size}, pad=16)
+                        plt.xlabel(fr"{st.session_state.single_xaxis}", fontsize=st.session_state.single_label_size)
+                        plt.ylabel(fr"{st.session_state.single_yaxis}", fontsize=st.session_state.single_label_size)
+                        plt.savefig(st.session_state.single_img, format='png', dpi=600)
 
-                st.session_state.single_plot_show = True
+                        st.session_state.single_plot_show = True
 
     with wrapper_columns[1]:
         with st.container(border=True):
