@@ -9,6 +9,27 @@ from utils import parse_xvg
 
 st.set_page_config(layout="wide", page_title="XVG Plotter")
 
+if "single_img" not in st.session_state:
+    st.session_state.single_img = BytesIO()
+if "single_file_name" not in st.session_state:
+    st.session_state.single_file_name = None
+if "single_title" not in st.session_state:
+    st.session_state.single_title = None
+if "single_xaxis" not in st.session_state:
+    st.session_state.single_xaxis = None
+if "single_yaxis" not in st.session_state:
+    st.session_state.single_yaxis = None
+if "single_x_index" not in st.session_state:
+    st.session_state.single_x_index = 0
+if "single_y_index" not in st.session_state:
+    st.session_state.single_y_index = 1
+if "single_xvg_file_name" not in st.session_state:
+    st.session_state.single_xvg_file_name = None
+if "single_label_size" not in st.session_state:
+    st.session_state.single_label_size = 16
+if "single_series" not in st.session_state:
+    st.session_state.single_series = []
+
 hide_st_style = """
 <style>
     #MainMenu { visibility: hidden; }
@@ -26,13 +47,6 @@ selected = option_menu(
 )
 
 if selected == "Single File Analysis":
-    img = BytesIO()
-    file_name = ""
-    title = ""
-    xaxis = ""
-    series = []
-    xvg_file_name = ""
-
     wrapper_columns = st.columns([3, 2])
 
     with wrapper_columns[0]:
@@ -53,51 +67,52 @@ if selected == "Single File Analysis":
             # print(metadata["title"])
             # print(metadata["labels"]["series"])
 
-            title = metadata["title"]
-            series = metadata["labels"]["series"]
-            xaxis = metadata["labels"]["xaxis"]
-            xvg_file_name = os.path.splitext(xvg.name)[0]
+            st.session_state.single_title = metadata["title"]
+            st.session_state.single_series = metadata["labels"]["series"]
+            st.session_state.single_xaxis = metadata["labels"]["xaxis"]
+            st.session_state.single_yaxis = metadata["labels"]["yaxis"]
+            st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
 
         file_name_columns = st.columns([1])
-        file_name = file_name_columns[0].text_input(label="File Name", value=xvg_file_name)
+        file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name, key="single_file_name")
 
         axis_columns = st.columns([1, 1])
-        x_index_ = axis_columns[0].radio("Select X Axis", [xaxis] + series, index=0)
+        x_index_ = axis_columns[0].radio("Select X Axis", [st.session_state.single_xaxis] + st.session_state.single_series, index=0)
         # y_index_ = axis_columns[1].multiselect(
         #     'Select Y Axes',
         #     ["Time"] + series,
         # )
-        y_index_ = axis_columns[1].radio("Select Y Axis", [xaxis] + series, index=0)
+        y_index_ = axis_columns[1].radio("Select Y Axis", [st.session_state.single_xaxis] + st.session_state.single_series, index=1 if len(st.session_state.single_series) else 0)
 
         label_columns = st.columns([1, 1])
-        x_label = label_columns[0].text_input(label="X Label", value=x_index_)
-        y_label = label_columns[1].text_input(label="Y Label", value=y_index_)
+        label_columns[0].text_input(label="X Label", key="single_xaxis")
+        label_columns[1].text_input(label="Y Label", key="single_yaxis")
 
-        x_index = ([xaxis] + series).index(x_index_)
-        y_index = ([xaxis] + series).index(y_index_)
+        st.session_state.single_x_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(x_index_)
+        st.session_state.single_y_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(y_index_)
 
         size_columns = st.columns([1])
-        label_size = size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16)
+        size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16, key="single_label_size")
 
         if st.button("Plot XVG"):
-            if file_name and x_label and y_label and label_size:
-                x = data[..., x_index]
-                y = data[..., y_index]
+            if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
+                x = data[..., st.session_state.single_x_index]
+                y = data[..., st.session_state.single_y_index]
 
                 plt.plot(x, y)
-                plt.xlabel(fr"{x_label}", fontsize=label_size)
-                plt.ylabel(fr"{y_label}", fontsize=label_size)
-                plt.savefig(img, format='png', dpi=600)
+                plt.xlabel(fr"{st.session_state.single_xaxis}", fontsize=st.session_state.single_label_size)
+                plt.ylabel(fr"{st.session_state.single_yaxis}", fontsize=st.session_state.single_label_size)
+                plt.savefig(st.session_state.single_img, format='png', dpi=600)
 
     with wrapper_columns[1]:
         with st.container(border=True):
-            if img and file_name:
+            if st.session_state.single_img and st.session_state.single_file_name:
                 st.pyplot(plt)
 
-                btn = st.download_button(
+                st.download_button(
                     label="Download Plot",
-                    data=img,
-                    file_name=f"{file_name}.png",
+                    data=st.session_state.single_img,
+                    file_name=f"{st.session_state.single_file_name}.png",
                     mime="image/png"
                 )
 
@@ -224,6 +239,8 @@ You can plot XVG file singly or select folder for ease selection.
 2. Select XVG File: All xvg file in the project folder will be populated here.
 3. Other options are same as Single File Analysis.
     """, unsafe_allow_html=True)
+
+st.write(st.session_state)
 
 footer = """<style>
     p {
