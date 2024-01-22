@@ -18,6 +18,8 @@ if "single_file_name" not in st.session_state:
     st.session_state.single_file_name = None
 if "single_title" not in st.session_state:
     st.session_state.single_title = None
+if "single_title_updated" not in st.session_state:
+    st.session_state.single_title_updated = ""
 if "single_title_size" not in st.session_state:
     st.session_state.single_title_size = 20
 if "single_title_show" not in st.session_state:
@@ -26,8 +28,12 @@ if "single_title_loc" not in st.session_state:
     st.session_state.single_title_loc: Literal["left", "center", "right"] | None = "center"
 if "single_xaxis" not in st.session_state:
     st.session_state.single_xaxis = None
+if "single_xaxis_updated" not in st.session_state:
+    st.session_state.single_xaxis_updated = None
 if "single_yaxis" not in st.session_state:
     st.session_state.single_yaxis = None
+if "single_yaxis_updated" not in st.session_state:
+    st.session_state.single_yaxis_updated = None
 if "single_yaxes" not in st.session_state:
     st.session_state.single_yaxes = []
 if "single_x_index" not in st.session_state:
@@ -166,8 +172,10 @@ if selected == "Single File Analysis":
 
                 with st.expander("Labels"):
                     label_columns = st.columns([1, 1])
-                    label_columns[0].text_input(label="X Label", key="single_xaxis")
-                    label_columns[1].text_input(label="Y Label", key="single_yaxis")
+                    label_columns[0].text_input(label="X Label", value=st.session_state.single_xaxis,
+                                                key="single_xaxis_updated")
+                    label_columns[1].text_input(label="Y Label", value=st.session_state.single_yaxis,
+                                                key="single_yaxis_updated")
 
                     size_columns = st.columns([1])
                     size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
@@ -176,7 +184,8 @@ if selected == "Single File Analysis":
                 with st.expander("Title"):
                     title_columns = st.columns([1, 1, 1])
                     title_columns[0].checkbox(label="Show Title", key="single_title_show")
-                    title_columns[0].text_input(label="Title", key="single_title")
+                    title_columns[0].text_input(label="Title", value=st.session_state.single_title,
+                                                key="single_title_updated")
                     title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
                                             key="single_title_size")
                     title_columns[2].selectbox(label="Title Location", key="single_title_loc",
@@ -200,10 +209,10 @@ if selected == "Single File Analysis":
                             plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
                                        fontsize=st.session_state.single_legend_size)
                         if st.session_state.single_title_show:
-                            plt.title(label=st.session_state.single_title, loc=st.session_state.single_title_loc,
+                            plt.title(label=st.session_state.single_title_updated, loc=st.session_state.single_title_loc,
                                       fontdict={"fontsize": st.session_state.single_title_size}, pad=16)
-                        plt.xlabel(fr"{st.session_state.single_xaxis}", fontsize=st.session_state.single_label_size)
-                        plt.ylabel(fr"{st.session_state.single_yaxis}", fontsize=st.session_state.single_label_size)
+                        plt.xlabel(fr"{st.session_state.single_xaxis_updated}", fontsize=st.session_state.single_label_size)
+                        plt.ylabel(fr"{st.session_state.single_yaxis_updated}", fontsize=st.session_state.single_label_size)
                         plt.savefig(st.session_state.single_img, format='png', dpi=600)
 
                         st.session_state.single_plot_show = True
