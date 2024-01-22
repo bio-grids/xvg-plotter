@@ -1,6 +1,8 @@
 import os
+import pathlib
 from io import StringIO, BytesIO
-from typing import Literal
+from pathlib import Path
+from typing import Literal, List
 
 import matplotlib.pyplot as plt
 import streamlit as st
@@ -93,6 +95,15 @@ if "multiple_legend_loc" not in st.session_state:
     st.session_state.multiple_legend_loc = "best"
 if "multiple_legend_size" not in st.session_state:
     st.session_state.multiple_legend_size = 12
+
+if "docker_project_path" not in st.session_state:
+    st.session_state.docker_project_path: pathlib.Path = Path("/projects")
+if "docker_directories" not in st.session_state:
+    st.session_state.docker_directories: List[pathlib.Path] = []
+if "docker_selected_dir" not in st.session_state:
+    st.session_state.docker_selected_dir = None
+if "docker_xvg_files" not in st.session_state:
+    st.session_state.docker_xvg_files: List[pathlib.Path] = []
 
 hide_st_style = """
 <style>
@@ -215,22 +226,184 @@ if selected == "Single File Analysis":
 elif selected == "Folder Analysis":
     IS_DOCKER = int(os.environ.get('IS_DOCKER', "0"))
 
-    wrapper_columns = st.columns([3, 2])
-
     if IS_DOCKER:
-        pass
-        # project_path = Path("/projects")
+        wrapper_columns = st.columns([3, 2])
 
-        # st.write(list(project_path.glob("*.xvg")))
+        if st.session_state.docker_project_path:
+            st.session_state.docker_directories = []
+            for i in st.session_state.docker_project_path.glob('[!.]*'):
+                if i.is_dir():
+                    st.session_state.docker_directories.append(i.name)
 
-        # dir_paths = []
-        # for i in project_path.glob('[!.]*'):
-        #     if i.is_dir():
-        #         dir_paths.append(i.name)
 
-        # st.write(list(get_all_items(project_path)))
+        def handle_next():
+            if st.session_state.docker_selected_dir:
+                st.session_state.docker_project_path = st.session_state.docker_project_path / st.session_state.docker_selected_dir
+
+                st.session_state.docker_directories = []
+                for i in st.session_state.docker_project_path.glob('[!.]*'):
+                    if i.is_dir():
+                        st.session_state.docker_directories.append(i.name)
+
+
+        def handle_clear():
+            st.session_state.docker_project_path = Path("/projects")
+            st.session_state.docker_xvg_files = []
+
+            st.session_state.docker_directories = []
+            for i in st.session_state.docker_project_path.glob('[!.]*'):
+                if i.is_dir():
+                    st.session_state.docker_directories.append(i.name)
+
+
+        def handle_select():
+            if st.session_state.docker_selected_dir:
+                st.session_state.docker_project_path = st.session_state.docker_project_path / st.session_state.docker_selected_dir
+                st.session_state.docker_xvg_files = [x for x in st.session_state.docker_project_path.iterdir() if
+                                                     x.is_file() and x.name.endswith(".xvg")]
+
+
+        # st.write(st.session_state.docker_xvg_files)
+
+        with wrapper_columns[0]:
+            with st.container(border=True):
+                folder_columns = st.columns([3, 2])
+
+                with folder_columns[0]:
+                    st.selectbox("Select Folder", options=st.session_state.docker_directories, index=None,
+                                 key="docker_selected_dir")
+
+                with folder_columns[1]:
+                    if st.session_state.docker_project_path:
+                        st.write("Selected Folder", st.session_state.docker_project_path)
+
+                # button_wrapper_columns = st.columns([3, 2])
+                # with button_wrapper_columns[0]:
+                button_columns = st.columns([1, 1, 1, 2])
+                button_columns[0].button("Select", on_click=handle_select)
+                button_columns[1].button("Next", on_click=handle_next)
+                button_columns[2].button("Clear", on_click=handle_clear)
+
+        xvg_columns = st.columns([3, 2])
+
+        with xvg_columns[0]:
+            if len(st.session_state.docker_xvg_files):
+                st.selectbox("Select XVG File", options=[x.name for x in st.session_state.docker_xvg_files],
+                             key="multiple_xvg_file_name", index=None)
+
+                if st.session_state.multiple_xvg_file_name:
+                    xvg = st.session_state.docker_project_path / st.session_state.multiple_xvg_file_name
+
+                    if xvg is not None:
+                        with open(xvg, "rb") as f:
+                            string_data = f.read().decode("utf-8")
+
+                        metadata, data = parse_xvg(string_data)
+
+                        st.session_state.multiple_title = metadata["title"]
+                        st.session_state.multiple_series = metadata["labels"]["series"]
+                        st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
+                        st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
+
+                    xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
+
+                    file_name_columns = st.columns([1])
+                    file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
+                                                    key="multiple_file_name")
+
+                    axis_columns = st.columns([1, 2])
+                    x_index_ = axis_columns[0].radio(
+                        "Select X Axis",
+                        [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
+                        index=0
+                    )
+                    y_index__ = axis_columns[1].multiselect(
+                        'Select Y Axes',
+                        [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
+                        default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
+                            1 if len(st.session_state.multiple_series) else 0]
+                    )
+
+                    st.session_state.multiple_x_index = (
+                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                        x_index_)
+                    st.session_state.multiple_yaxes = list(
+                        map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                            z),
+                            y_index__))
+
+                    with st.expander("Labels"):
+                        label_columns = st.columns([1, 1])
+                        label_columns[0].text_input(label="X Label", value=st.session_state.multiple_xaxis,
+                                                    key="multiple_xaxis_updated")
+                        label_columns[1].text_input(label="Y Label", value=st.session_state.multiple_yaxis,
+                                                    key="multiple_yaxis_updated")
+
+                        size_columns = st.columns([1])
+                        size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
+                                               key="multiple_label_size")
+
+                    with st.expander("Title"):
+                        title_columns = st.columns([1, 1, 1])
+                        title_columns[0].checkbox(label="Show Title", key="multiple_title_show")
+                        title_columns[0].text_input(label="Title", value=st.session_state.multiple_title,
+                                                    key="multiple_title_updated")
+                        title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
+                                                key="multiple_title_size")
+                        title_columns[2].selectbox(label="Title Location", key="multiple_title_loc",
+                                                   options=["center", "left", "right"], index=0)
+
+                    with st.expander("Legends"):
+                        legend_columns = st.columns([1, 1, 1])
+                        legend_columns[0].checkbox(label="Show Legend", key="multiple_legend_show")
+                        legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
+                                                 key="multiple_legend_size")
+                        legend_columns[2].selectbox(label="Legend Location", key="multiple_legend_loc",
+                                                    options=legend_locations,
+                                                    index=0)
+
+                    if st.button("Plot XVG"):
+                        if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
+                            for y in st.session_state.multiple_yaxes:
+                                plt.plot(data[..., st.session_state.multiple_x_index], data[..., y])
+
+                            if st.session_state.multiple_legend_show:
+                                plt.legend(st.session_state.multiple_series,
+                                           loc=st.session_state.multiple_legend_loc,
+                                           fontsize=st.session_state.multiple_legend_size)
+                            if st.session_state.multiple_title_show:
+                                plt.title(
+                                    label=st.session_state.multiple_title_updated,
+                                    loc=st.session_state.multiple_title_loc,
+                                    fontdict={"fontsize": st.session_state.multiple_title_size},
+                                    pad=16
+                                )
+                            plt.xlabel(fr"{st.session_state.multiple_xaxis_updated}",
+                                       fontsize=st.session_state.multiple_label_size)
+                            plt.ylabel(fr"{st.session_state.multiple_yaxis_updated}",
+                                       fontsize=st.session_state.multiple_label_size)
+                            plt.savefig(st.session_state.multiple_img, format='png', dpi=600)
+
+                            st.session_state.multiple_plot_show = True
+
+        with xvg_columns[1]:
+            with st.container(border=True):
+                plot_columns = st.columns([2, 1])
+                plot_columns[0].subheader("Plot Visualization")
+
+                if st.session_state.multiple_img and st.session_state.multiple_file_name and st.session_state.multiple_plot_show:
+                    plot_columns[1].download_button(
+                        label="Download Plot",
+                        data=st.session_state.multiple_img,
+                        file_name=f"{st.session_state.multiple_file_name}.png",
+                        mime="image/png"
+                    )
+
+                    st.pyplot(plt)
 
     else:
+        wrapper_columns = st.columns([3, 2])
+
         with wrapper_columns[0]:
             with st.container(border=True):
                 folder_columns = st.columns([3, 2])
@@ -312,7 +485,8 @@ elif selected == "Folder Analysis":
                                 [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
                             x_index_)
                         st.session_state.multiple_yaxes = list(
-                            map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(z),
+                            map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                                z),
                                 y_index__))
 
                         with st.expander("Labels"):
@@ -351,7 +525,8 @@ elif selected == "Folder Analysis":
                                     plt.plot(data[..., st.session_state.multiple_x_index], data[..., y])
 
                                 if st.session_state.multiple_legend_show:
-                                    plt.legend(st.session_state.multiple_series, loc=st.session_state.multiple_legend_loc,
+                                    plt.legend(st.session_state.multiple_series,
+                                               loc=st.session_state.multiple_legend_loc,
                                                fontsize=st.session_state.multiple_legend_size)
                                 if st.session_state.multiple_title_show:
                                     plt.title(
@@ -368,20 +543,20 @@ elif selected == "Folder Analysis":
 
                                 st.session_state.multiple_plot_show = True
 
-    with wrapper_columns[1]:
-        with st.container(border=True):
-            plot_columns = st.columns([2, 1])
-            plot_columns[0].subheader("Plot Visualization")
+        with wrapper_columns[1]:
+            with st.container(border=True):
+                plot_columns = st.columns([2, 1])
+                plot_columns[0].subheader("Plot Visualization")
 
-            if st.session_state.multiple_img and st.session_state.multiple_file_name and st.session_state.multiple_plot_show:
-                plot_columns[1].download_button(
-                    label="Download Plot",
-                    data=st.session_state.multiple_img,
-                    file_name=f"{st.session_state.multiple_file_name}.png",
-                    mime="image/png"
-                )
+                if st.session_state.multiple_img and st.session_state.multiple_file_name and st.session_state.multiple_plot_show:
+                    plot_columns[1].download_button(
+                        label="Download Plot",
+                        data=st.session_state.multiple_img,
+                        file_name=f"{st.session_state.multiple_file_name}.png",
+                        mime="image/png"
+                    )
 
-                st.pyplot(plt)
+                    st.pyplot(plt)
 
 elif selected == "Documentation":
     st.markdown("""
@@ -415,7 +590,7 @@ You can plot XVG file singly or select folder for ease selection.
 3. Other options are same as Single File Analysis.
     """, unsafe_allow_html=True)
 
-st.write(st.session_state)
+# st.write(st.session_state)
 
 footer = """<style>
     p {
