@@ -569,34 +569,62 @@ elif selected == "Folder Analysis":
 
 elif selected == "Documentation":
     st.markdown("""
-# Usage
+## Usage
 
 You can plot XVG file singly or select folder for ease selection.
 
-## Single File Analysis
+### Single File Analysis
 
-<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/03.png" alt="Single File Analysis - Full View" width="100%" height="auto">
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/single_01.png" alt="Single File Analysis - Full View" width="100%" height="auto">
 
-### Options
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/single_02.png" alt="Single File Analysis - Options" width="100%" height="auto">
 
-1. File Name: File name for saving
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/single_03.png" alt="Single File Analysis - Multi Line" width="100%" height="auto">
+
+#### Options
+
+1. File Name: File name for saving. File name will be auto generated up on selected file.
 2. Select X Axis: Select X axis from radio button group.
-3. Select Y Axis: Select Y axis from radio button group.
-4. X Label: X axis label. You can give equation by adding \$. for example: `Density ($m^3$)`
-5. Y Label: X axis label.
-6. Label Size: Label font size of X and Y axes. You can select `12` to `24`.
+3. Select Y Axis: Select Y axis from multi selection. You can plot multiple lines.
+4. Labels:
+    * X Label: X axis label. You can give equation by adding $. for example: `Density ($m^3$)`
+    * Y Label: X axis label.
+    * Label Size: Label font size of X and Y axes. You can select `12` to `24`.
+5. Title
+    * Show Title: Checkbox for showing title.
+    * Title: Auto generated title from XVG file. Then you can update.
+    * Title Size: Title font size. You can select `12` to `30`.
+    * Title Location: Location of title.
+6. Legends:
+    * Show Legend: Checkbox for showing legend.
+    * Legend Size: Legend font size. You can select `8` to `24`.
+    * Legend Location: Location of legend.
 7. Plot XVG: Button for plotting.
 8. Download Plot: Button for downloading image.
 
-## Folder Analysis
+### Folder Analysis
 
-<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/02.png" alt="Folder Analysis - Full View" width="100%" height="auto">
+#### Options for Running Anaconda:
 
-### Options
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/folder_01.png" alt="Folder Analysis - Full View" width="100%" height="auto">
 
 1. Put Project Folder: After copy and pasting project folder path, click Submit button. It will show success or error message after validating the path.
 2. Select XVG File: All xvg file in the project folder will be populated here.
 3. Other options are same as Single File Analysis.
+
+#### Options for Running Docker:
+
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/folder_02.png" alt="Folder Analysis - Docker Folder Selection" width="100%" height="auto">
+
+<img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/folder_03.png" alt="Folder Analysis - Docker Folder Selection" width="100%" height="auto">
+
+1. Select Folder: Your passed volume in time of running container will be the root volume. Folders of the root folder will be populated automatically. Hidden folders will be excluded.
+2. Action Buttons:
+   * Select Button: After selecting a folder click Select Button if the XVG files are in the folder. 
+   * Next Button: If XVG files are in child folder, then click Next Button to show children folders.
+   * Clear Button: You can clear selection by clicking Clear Button.
+3. Select XVG File: All xvg file in the project folder will be populated here.
+4. Other options are same as Single File Analysis.
     """, unsafe_allow_html=True)
 
 # st.write(st.session_state)
