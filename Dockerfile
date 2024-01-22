@@ -14,6 +14,8 @@ COPY . .
 
 EXPOSE 7500
 
+ENV IS_DOCKER 1
+
 ENV PATH /opt/conda/envs/xvg-plotter/bin:$PATH
 
 ENTRYPOINT ["streamlit", "run", "main.py", "--server.port=7500", "--server.address=0.0.0.0"]
