@@ -46,6 +46,27 @@ if "single_series" not in st.session_state:
 if "single_plot_show" not in st.session_state:
     st.session_state.single_plot_show = False
 
+if "multiple_img" not in st.session_state:
+    st.session_state.multiple_img = BytesIO()
+if "multiple_file_name" not in st.session_state:
+    st.session_state.multiple_file_name = None
+if "multiple_project_folder" not in st.session_state:
+    st.session_state.multiple_project_folder = ""
+if "multiple_xvg_files" not in st.session_state:
+    st.session_state.multiple_xvg_files = []
+if "multiple_xvg_file_name" not in st.session_state:
+    st.session_state.multiple_xvg_file_name = None
+if "multiple_xaxis" not in st.session_state:
+    st.session_state.multiple_xaxis = None
+if "multiple_yaxis" not in st.session_state:
+    st.session_state.multiple_yaxis = None
+if "multiple_yaxes" not in st.session_state:
+    st.session_state.multiple_yaxes = []
+if "multiple_x_index" not in st.session_state:
+    st.session_state.multiple_x_index = 0
+if "multiple_y_index" not in st.session_state:
+    st.session_state.multiple_y_index = 1
+
 hide_st_style = """
 <style>
     #MainMenu { visibility: hidden; }
@@ -91,7 +112,8 @@ if selected == "Single File Analysis":
 
                 axis_columns = st.columns([1, 2])
                 x_index_ = axis_columns[0].radio("Select X Axis",
-                                                 [st.session_state.single_xaxis] + st.session_state.single_series, index=0)
+                                                 [st.session_state.single_xaxis] + st.session_state.single_series,
+                                                 index=0)
                 y_index__ = axis_columns[1].multiselect(
                     'Select Y Axes',
                     [st.session_state.single_xaxis] + st.session_state.single_series,
@@ -99,10 +121,12 @@ if selected == "Single File Analysis":
                         1 if len(st.session_state.single_series) else 0]
                 )
 
-                st.session_state.single_x_index = ([st.session_state.single_xaxis] + st.session_state.single_series).index(
+                st.session_state.single_x_index = (
+                        [st.session_state.single_xaxis] + st.session_state.single_series).index(
                     x_index_)
                 st.session_state.single_yaxes = list(
-                    map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z), y_index__))
+                    map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z),
+                        y_index__))
 
                 with st.expander("Labels"):
                     label_columns = st.columns([1, 1])
@@ -127,7 +151,8 @@ if selected == "Single File Analysis":
                     legend_columns[0].checkbox(label="Show Legend", key="single_legend_show")
                     legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
                                              key="single_legend_size")
-                    legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc", options=legend_locations,
+                    legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc",
+                                                options=legend_locations,
                                                 index=0)
 
                 if st.button("Plot XVG"):
@@ -163,54 +188,57 @@ if selected == "Single File Analysis":
                 st.pyplot(plt)
 
 elif selected == "Folder Analysis":
-    img = BytesIO()
-    file_name = ''
-
     wrapper_columns = st.columns([3, 2])
 
     with wrapper_columns[0]:
-        xvg_files = []
-
         with st.container(border=True):
-            with st.form("folder_selection_form"):
-                folder_columns = st.columns([3, 2])
+            folder_columns = st.columns([3, 2])
 
-                with folder_columns[0]:
-                    project_folder = st.text_input("Put Project Folder")
-                    st.form_submit_button("Submit")
-                with folder_columns[1]:
-                    if project_folder:
-                        st.write(f"Selected folder: {project_folder}")
-                        is_exist = os.path.exists(project_folder)
-                        if is_exist:
-                            st.success("Project folder selected.")
-                        else:
-                            st.error("This is not a valid folder")
+            with folder_columns[0]:
+                st.text_input("Put Project Folder", key="multiple_project_folder")
 
-                plotter_folder = os.path.join(project_folder, "xvg-plotter")
+                if st.button("Submit"):
+                    with folder_columns[1]:
+                        if st.session_state.multiple_project_folder:
+                            st.write(f"Targeted folder: {st.session_state.multiple_project_folder}")
+                            is_exist = os.path.exists(st.session_state.multiple_project_folder)
+                            if is_exist:
+                                files = [f for f in
+                                         os.listdir(st.session_state.multiple_project_folder) if
+                                         f.endswith(".xvg") and os.path.isfile(
+                                             os.path.join(st.session_state.multiple_project_folder,
+                                                          f))]
 
-                if not os.path.isdir(plotter_folder):
-                    os.makedirs(plotter_folder)
+                                if len(files):
+                                    st.session_state.multiple_xvg_files = files
 
-                if project_folder:
-                    xvg_files = [f for f in os.listdir(project_folder) if
-                                 f.endswith(".xvg") and os.path.isfile(os.path.join(project_folder, f))]
+                                    plotter_folder = os.path.join(st.session_state.multiple_project_folder,
+                                                                  "xvg-plotter")
 
-            if xvg_files:
-                # with st.form("xvg_submit_form"):
-                xvg_file = st.selectbox("Select XVG File", options=xvg_files)
+                                    if not os.path.isdir(plotter_folder):
+                                        os.makedirs(plotter_folder)
 
-                if xvg_file:
-                    xvg = os.path.join(project_folder, xvg_file)
+                                    st.success("Project folder selected.")
+                                else:
+                                    st.error("No XVG files found or files are not showing because of permission issue. Use Single File Analysis instead.")
+                            else:
+                                st.error("This is not a valid folder or files are not showing because of permission issue. Use Single File Analysis instead.")
 
-                    xvg_file_name = os.path.splitext(xvg_file)[0]
+            if len(st.session_state.multiple_xvg_files):
+                st.selectbox("Select XVG File", options=st.session_state.multiple_xvg_files, key="multiple_xvg_file_name")
+
+                if st.session_state.multiple_xvg_file_name:
+                    xvg = os.path.join(st.session_state.multiple_project_folder, st.session_state.multiple_xvg_file_name)
+
+                    xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
 
                     file_name_columns = st.columns([1])
-                    file_name = file_name_columns[0].text_input(label="File Name", value=xvg_file_name)
+                    file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
+                                                    key="multiple_file_name")
 
                     label_columns = st.columns([1, 1])
-                    x_label = label_columns[0].text_input(label="X Label")
-                    y_label = label_columns[1].text_input(label="Y Label")
+                    label_columns[0].text_input(label="X Label", key="multiple_xaxis")
+                    label_columns[1].text_input(label="Y Label", key="multiple_yaxis")
 
                     index_columns = st.columns([1, 1])
                     x_index = index_columns[0].number_input(label="X Index", min_value=0, max_value=10, step=1)
@@ -221,7 +249,7 @@ elif selected == "Folder Analysis":
                                                         value=16)
 
                     if st.button("Plot XVG"):
-                        if file_name and x_label and y_label and label_size:
+                        if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and label_size:
                             if xvg is not None:
                                 with open(xvg, 'rb') as f:
                                     string_data = f.read().decode("utf-8")
@@ -238,19 +266,19 @@ elif selected == "Folder Analysis":
                                      line and not (line.startswith('#') or line.startswith('@'))]
 
                                 plt.plot(x, y)
-                                plt.xlabel(fr"{x_label}", fontsize=label_size)
-                                plt.ylabel(fr"{y_label}", fontsize=label_size)
-                                plt.savefig(img, format='png', dpi=600)
+                                plt.xlabel(fr"{st.session_state.multiple_xaxis}", fontsize=label_size)
+                                plt.ylabel(fr"{st.session_state.multiple_yaxis}", fontsize=label_size)
+                                plt.savefig(st.session_state.multiple_img, format='png', dpi=600)
 
     with wrapper_columns[1]:
         with st.container(border=True):
-            if img and file_name:
+            if st.session_state.multiple_img and st.session_state.multiple_file_name:
                 st.pyplot(plt)
 
                 btn = st.download_button(
                     label="Download Plot",
-                    data=img,
-                    file_name=f"{file_name}.png",
+                    data=st.session_state.multiple_img,
+                    file_name=f"{st.session_state.multiple_file_name}.png",
                     mime="image/png"
                 )
 
@@ -286,7 +314,7 @@ You can plot XVG file singly or select folder for ease selection.
 3. Other options are same as Single File Analysis.
     """, unsafe_allow_html=True)
 
-# st.write(st.session_state)
+st.write(st.session_state)
 
 footer = """<style>
     p {
