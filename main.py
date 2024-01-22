@@ -569,11 +569,73 @@ elif selected == "Folder Analysis":
 
 elif selected == "Documentation":
     st.markdown("""
-## Usage
+# Introduction
+
+XVG Plotter is a plotting tool for xvg files based on streamlit library.
+
+# Installation
+
+## Anaconda
+
+1. Run create environment command.
+
+```shell
+conda env create -f environment.yml # for windows
+
+conda env create -f environment-linux.yml # for linux
+
+conda activate xvg-plotter
+```
+
+2. Start streamlit app
+
+```shell
+streamlit run main.py
+```
+
+The app will be start on port 8501 and you can access by http://localhost:8501.
+
+If you want to run on another port run:
+
+```shell
+streamlit run main.py --server.port=7500
+```
+
+## Docker
+
+1. Pull latest firesimulations/xvg-plotter image
+
+```shell
+docker pull firesimulations/xvg-plotter:latest
+```
+
+2. Run docker container
+
+```shell
+docker run -p 7500:7500 -d --name xvg-plotter firesimulations/xvg-plotter:latest
+```
+
+The app will be start on port 7500 and you can access by http://localhost:7500.
+
+If you want to run on another port run:
+
+```shell
+docker run -p 8500:7500 -d --name xvg-plotter firesimulations/xvg-plotter:latest 
+```
+
+If you must provide docker volume for running Folder Analysis. For example, if your projects are in C:/projects/md/prod folder pass volume as `-v C:/projects/md/prod:/projects`.
+
+`:/projects` should not be changed. Otherwise, it will show error.
+
+```shell
+docker run -p 7500:7500 -d -v C:/projects/md/prod:/projects --name xvg-plotter firesimulations/xvg-plotter:latest
+```
+
+# Usage
 
 You can plot XVG file singly or select folder for ease selection.
 
-### Single File Analysis
+## Single File Analysis
 
 <img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/single_01.png" alt="Single File Analysis - Full View" width="100%" height="auto">
 
@@ -581,7 +643,7 @@ You can plot XVG file singly or select folder for ease selection.
 
 <img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/single_03.png" alt="Single File Analysis - Multi Line" width="100%" height="auto">
 
-#### Options
+### Options
 
 1. File Name: File name for saving. File name will be auto generated up on selected file.
 2. Select X Axis: Select X axis from radio button group.
@@ -602,9 +664,9 @@ You can plot XVG file singly or select folder for ease selection.
 7. Plot XVG: Button for plotting.
 8. Download Plot: Button for downloading image.
 
-### Folder Analysis
+## Folder Analysis
 
-#### Options for Running Anaconda:
+### Options for Running Anaconda:
 
 <img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/folder_01.png" alt="Folder Analysis - Full View" width="100%" height="auto">
 
@@ -612,7 +674,7 @@ You can plot XVG file singly or select folder for ease selection.
 2. Select XVG File: All xvg file in the project folder will be populated here.
 3. Other options are same as Single File Analysis.
 
-#### Options for Running Docker:
+### Options for Running Docker:
 
 <img src="https://github.com/bio-grids/xvg-plotter/raw/master/images/folder_02.png" alt="Folder Analysis - Docker Folder Selection" width="100%" height="auto">
 
