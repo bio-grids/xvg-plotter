@@ -1,19 +1,19 @@
 import re
 import shlex
 import sys
-import typing
+from typing import List, TypedDict
 
 import numpy as np
 import numpy.typing as npt
 
 
-class Labels(typing.TypedDict):
+class Labels(TypedDict):
     xaxis: str
     yaxis: str
     series: list[str]
 
 
-class Metadata(typing.TypedDict):
+class Metadata(TypedDict):
     title: str
     labels: Labels
 
@@ -31,6 +31,22 @@ def parse_xvg(data: str, columns: list[int] | None = None) -> tuple[Metadata, np
         "yaxis": "",
         "series": [],
     }
+
+    graphs: List[List[str]] = []
+    chunks: List[str] = []
+
+    for line in data.split("\n"):
+        # print(chunks)
+        line = line.strip()
+
+        if line.startswith("&"):
+            graphs.append(chunks)
+            # print(chunks)
+            chunks = []
+        else:
+            chunks.append(line)
+
+    print(graphs)
 
     for line in data.split("\n"):
         line = line.strip()
@@ -55,10 +71,14 @@ def parse_xvg(data: str, columns: list[int] | None = None) -> tuple[Metadata, np
                 if tokens[0] == "title":
                     metadata["title"] = tokens[1]
             else:
-                print('Unsupported entry: {0} - ignoring'.format(tokens[0]), file=sys.stderr)
+                pass
+                # print('Unsupported entry: {0} - ignoring'.format(tokens[0]), file=sys.stderr)
 
         elif len(line) and line[0].isdigit():
             num_data.append(list(map(float, line.split())))
+
+        else:
+            continue
 
     data: npt.NDArray = np.array(num_data)
 
