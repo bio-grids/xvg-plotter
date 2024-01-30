@@ -1,5 +1,7 @@
 # XVG Plotter
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10576496.svg)](https://doi.org/10.5281/zenodo.10576496)
+
 ## Introduction
 
 XVG Plotter is a plotting tool for xvg files based on streamlit library.
@@ -118,3 +120,18 @@ You can plot XVG file singly or select folder for ease selection.
    * Clear Button: You can clear selection by clicking Clear Button.
 3. Select XVG File: All xvg file in the project folder will be populated here.
 4. Other options are same as Single File Analysis.
+
+## Citation
+
+```text
+@misc{noor_2024_10576496,
+  author       = {Noor, Dilwar Hossain},
+  title        = {XVG Plotter},
+  month        = jan,
+  year         = 2024,
+  publisher    = {Zenodo},
+  version      = {0.5.0},
+  doi          = {10.5281/zenodo.10576496},
+  url          = {https://doi.org/10.5281/zenodo.10576496}
+}
+```
