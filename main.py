@@ -62,6 +62,14 @@ if "single_multiply_y" not in st.session_state:
     st.session_state.single_multiply_y = False
 if "single_y_multiplication_value" not in st.session_state:
     st.session_state.single_y_multiplication_value = 1
+if "single_modify_data" not in st.session_state:
+    st.session_state.single_modify_data = False
+if "single_modify_min" not in st.session_state:
+    st.session_state.single_modify_min = 1
+if "single_modify_max" not in st.session_state:
+    st.session_state.single_modify_max = 1
+if "single_modify_step" not in st.session_state:
+    st.session_state.single_modify_step = 1
 
 if "multiple_img" not in st.session_state:
     st.session_state.multiple_img = BytesIO()
@@ -117,6 +125,14 @@ if "multiple_multiply_y" not in st.session_state:
     st.session_state.multiple_multiply_y = False
 if "multiple_y_multiplication_value" not in st.session_state:
     st.session_state.multiple_y_multiplication_value = 1
+if "multiple_modify_data" not in st.session_state:
+    st.session_state.multiple_modify_data = False
+if "multiple_modify_min" not in st.session_state:
+    st.session_state.multiple_modify_min = 1
+if "multiple_modify_max" not in st.session_state:
+    st.session_state.multiple_modify_max = 1
+if "multiple_modify_step" not in st.session_state:
+    st.session_state.multiple_modify_step = 1
 
 if "docker_project_path" not in st.session_state:
     st.session_state.docker_project_path: pathlib.Path = Path("/projects")
@@ -152,39 +168,40 @@ if selected == "Single File Analysis":
             xvg = files[0].file_uploader(label="Upload XVG File", accept_multiple_files=False, type=["xvg"])
 
             if xvg is not None:
-                stringio = StringIO(xvg.getvalue().decode("utf-8"))
+                with st.expander("Main Options", expanded=True):
+                    stringio = StringIO(xvg.getvalue().decode("utf-8"))
 
-                string_data = stringio.read()
+                    string_data = stringio.read()
 
-                metadata, data = parse_xvg(string_data)
+                    metadata, data = parse_xvg(string_data)
 
-                st.session_state.single_title = metadata["title"]
-                st.session_state.single_series = metadata["labels"]["series"]
-                st.session_state.single_xaxis = metadata["labels"]["xaxis"]
-                st.session_state.single_yaxis = metadata["labels"]["yaxis"]
-                st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
+                    st.session_state.single_title = metadata["title"]
+                    st.session_state.single_series = metadata["labels"]["series"]
+                    st.session_state.single_xaxis = metadata["labels"]["xaxis"]
+                    st.session_state.single_yaxis = metadata["labels"]["yaxis"]
+                    st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
 
-                file_name_columns = st.columns([1])
-                file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name,
-                                                key="single_file_name")
+                    file_name_columns = st.columns([1])
+                    file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name,
+                                                    key="single_file_name")
 
-                axis_columns = st.columns([1, 2])
-                x_index_ = axis_columns[0].radio("Select X Axis",
-                                                 [st.session_state.single_xaxis] + st.session_state.single_series,
-                                                 index=0)
-                y_index__ = axis_columns[1].multiselect(
-                    'Select Y Axes',
-                    [st.session_state.single_xaxis] + st.session_state.single_series,
-                    default=([st.session_state.single_xaxis] + st.session_state.single_series)[
-                        1 if len(st.session_state.single_series) else 0]
-                )
+                    axis_columns = st.columns([1, 2])
+                    x_index_ = axis_columns[0].radio("Select X Axis",
+                                                     [st.session_state.single_xaxis] + st.session_state.single_series,
+                                                     index=0)
+                    y_index__ = axis_columns[1].multiselect(
+                        'Select Y Axes',
+                        [st.session_state.single_xaxis] + st.session_state.single_series,
+                        default=([st.session_state.single_xaxis] + st.session_state.single_series)[
+                            1 if len(st.session_state.single_series) else 0]
+                    )
 
-                st.session_state.single_x_index = (
-                        [st.session_state.single_xaxis] + st.session_state.single_series).index(
-                    x_index_)
-                st.session_state.single_yaxes = list(
-                    map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z),
-                        y_index__))
+                    st.session_state.single_x_index = (
+                            [st.session_state.single_xaxis] + st.session_state.single_series).index(
+                        x_index_)
+                    st.session_state.single_yaxes = list(
+                        map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z),
+                            y_index__))
 
                 with st.expander("Labels"):
                     label_columns = st.columns([1, 1])
@@ -219,16 +236,37 @@ if selected == "Single File Analysis":
                 with st.expander("Axis Multiplication"):
                     multiplier_x_column = st.columns([1, 3, 1])
                     multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="single_multiply_x")
-                    multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000, key="single_x_multiplication_value")
+                    multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                                        key="single_x_multiplication_value")
                     with multiplier_x_column[2]:
-                        st.text_input("Value", value=st.session_state.single_x_multiplication_value, disabled=True, key="single_x_show_value")
+                        st.text_input("Value", value=st.session_state.single_x_multiplication_value, disabled=True,
+                                      key="single_x_show_value")
 
                     multiplier_y_column = st.columns([1, 3, 1])
                     multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="single_multiply_y")
                     multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                      key="single_y_multiplication_value")
+                                                        key="single_y_multiplication_value")
                     with multiplier_y_column[2]:
-                        st.text_input("Value", value=st.session_state.single_y_multiplication_value, disabled=True, key="single_y_show_value")
+                        st.text_input("Value", value=st.session_state.single_y_multiplication_value, disabled=True,
+                                      key="single_y_show_value")
+
+                with st.expander("Data Modifier"):
+                    modifier_selector_columns = st.columns([1, 1, 1])
+                    modifier_selector_columns[0].checkbox(label="Modify data?", key="single_modify_data")
+                    modifier_selector_columns[1].write(f"Total data points: {data.shape[0]}")
+                    modifier_columns = st.columns([1, 1, 1])
+                    modifier_columns[0].number_input(
+                        label="Start Point", value=0,
+                        key="single_modify_min",
+                    )
+                    modifier_columns[1].number_input(
+                        label="End Point", value=data.shape[0],
+                        key="single_modify_max"
+                    )
+                    modifier_columns[2].number_input(
+                        label="Step", value=st.session_state.single_modify_step,
+                        key="single_modify_step"
+                    )
 
                 if st.button("Plot XVG"):
                     if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
@@ -243,16 +281,26 @@ if selected == "Single File Analysis":
                             else:
                                 x_multiplier = 1
 
-                            plt.plot(data[..., st.session_state.single_x_index] * x_multiplier, data[..., y] * y_multiplier)
+                            if st.session_state.single_modify_data:
+                                data = data[
+                                       st.session_state.single_modify_min:st.session_state.single_modify_max:st.session_state.single_modify_step]
+
+                            modifier_selector_columns[2].write(f"Current data points: {data.shape[0]}")
+
+                            plt.plot(data[..., st.session_state.single_x_index] * x_multiplier,
+                                     data[..., y] * y_multiplier)
 
                         if st.session_state.single_legend_show:
                             plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
                                        fontsize=st.session_state.single_legend_size)
                         if st.session_state.single_title_show:
-                            plt.title(label=st.session_state.single_title_updated, loc=st.session_state.single_title_loc,
+                            plt.title(label=st.session_state.single_title_updated,
+                                      loc=st.session_state.single_title_loc,
                                       fontdict={"fontsize": st.session_state.single_title_size}, pad=16)
-                        plt.xlabel(fr"{st.session_state.single_xaxis_updated}", fontsize=st.session_state.single_label_size)
-                        plt.ylabel(fr"{st.session_state.single_yaxis_updated}", fontsize=st.session_state.single_label_size)
+                        plt.xlabel(fr"{st.session_state.single_xaxis_updated}",
+                                   fontsize=st.session_state.single_label_size)
+                        plt.ylabel(fr"{st.session_state.single_yaxis_updated}",
+                                   fontsize=st.session_state.single_label_size)
                         plt.savefig(st.session_state.single_img, format='png', dpi=600)
 
                         st.session_state.single_plot_show = True
@@ -341,45 +389,46 @@ elif selected == "Folder Analysis":
                              key="multiple_xvg_file_name", index=None)
 
                 if st.session_state.multiple_xvg_file_name:
-                    xvg = st.session_state.docker_project_path / st.session_state.multiple_xvg_file_name
+                    with st.expander("Main Options", expanded=True):
+                        xvg = st.session_state.docker_project_path / st.session_state.multiple_xvg_file_name
 
-                    if xvg is not None:
-                        with open(xvg, "rb") as f:
-                            string_data = f.read().decode("utf-8")
+                        if xvg is not None:
+                            with open(xvg, "rb") as f:
+                                string_data = f.read().decode("utf-8")
 
-                        metadata, data = parse_xvg(string_data)
+                            metadata, data = parse_xvg(string_data)
 
-                        st.session_state.multiple_title = metadata["title"]
-                        st.session_state.multiple_series = metadata["labels"]["series"]
-                        st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
-                        st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
+                            st.session_state.multiple_title = metadata["title"]
+                            st.session_state.multiple_series = metadata["labels"]["series"]
+                            st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
+                            st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
 
-                    xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
+                        xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
 
-                    file_name_columns = st.columns([1])
-                    file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
-                                                    key="multiple_file_name")
+                        file_name_columns = st.columns([1])
+                        file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
+                                                        key="multiple_file_name")
 
-                    axis_columns = st.columns([1, 2])
-                    x_index_ = axis_columns[0].radio(
-                        "Select X Axis",
-                        [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                        index=0
-                    )
-                    y_index__ = axis_columns[1].multiselect(
-                        'Select Y Axes',
-                        [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                        default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
-                            1 if len(st.session_state.multiple_series) else 0]
-                    )
+                        axis_columns = st.columns([1, 2])
+                        x_index_ = axis_columns[0].radio(
+                            "Select X Axis",
+                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
+                            index=0
+                        )
+                        y_index__ = axis_columns[1].multiselect(
+                            'Select Y Axes',
+                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
+                            default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
+                                1 if len(st.session_state.multiple_series) else 0]
+                        )
 
-                    st.session_state.multiple_x_index = (
-                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                        x_index_)
-                    st.session_state.multiple_yaxes = list(
-                        map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                            z),
-                            y_index__))
+                        st.session_state.multiple_x_index = (
+                                [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                            x_index_)
+                        st.session_state.multiple_yaxes = list(
+                            map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                                z),
+                                y_index__))
 
                     with st.expander("Labels"):
                         label_columns = st.columns([1, 1])
@@ -428,6 +477,24 @@ elif selected == "Folder Analysis":
                             st.text_input("Value", value=st.session_state.multiple_y_multiplication_value,
                                           disabled=True, key="multiple_y_show_value")
 
+                    with st.expander("Data Modifier"):
+                        modifier_selector_columns = st.columns([1, 1, 1])
+                        modifier_selector_columns[0].checkbox(label="Modify data?", key="multiple_modify_data")
+                        modifier_selector_columns[1].write(f"Total data points: {data.shape[0]}")
+                        modifier_columns = st.columns([1, 1, 1])
+                        modifier_columns[0].number_input(
+                            label="Start Point", value=0,
+                            key="multiple_modify_min",
+                        )
+                        modifier_columns[1].number_input(
+                            label="End Point", value=data.shape[0],
+                            key="multiple_modify_max"
+                        )
+                        modifier_columns[2].number_input(
+                            label="Step", value=st.session_state.multiple_modify_step,
+                            key="multiple_modify_step"
+                        )
+
                     if st.button("Plot XVG"):
                         if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
                             for y in st.session_state.multiple_yaxes:
@@ -441,7 +508,14 @@ elif selected == "Folder Analysis":
                                 else:
                                     x_multiplier = 1
 
-                                plt.plot(data[..., st.session_state.single_x_index] * x_multiplier, data[..., y] * y_multiplier)
+                                if st.session_state.multiple_modify_data:
+                                    data = data[
+                                           st.session_state.multiple_modify_min:st.session_state.multiple_modify_max:st.session_state.multiple_modify_step]
+
+                                modifier_selector_columns[2].write(f"Current data points: {data.shape[0]}")
+
+                                plt.plot(data[..., st.session_state.single_x_index] * x_multiplier,
+                                         data[..., y] * y_multiplier)
 
                             if st.session_state.multiple_legend_show:
                                 plt.legend(st.session_state.multiple_series,
@@ -525,45 +599,46 @@ elif selected == "Folder Analysis":
                                  key="multiple_xvg_file_name")
 
                     if st.session_state.multiple_xvg_file_name:
-                        xvg = os.path.join(st.session_state.multiple_project_folder,
-                                           st.session_state.multiple_xvg_file_name)
+                        with st.expander("Main Options", expanded=True):
+                            xvg = os.path.join(st.session_state.multiple_project_folder,
+                                               st.session_state.multiple_xvg_file_name)
 
-                        if xvg is not None:
-                            with open(xvg, 'rb') as f:
-                                string_data = f.read().decode("utf-8")
+                            if xvg is not None:
+                                with open(xvg, 'rb') as f:
+                                    string_data = f.read().decode("utf-8")
 
-                            metadata, data = parse_xvg(string_data)
+                                metadata, data = parse_xvg(string_data)
 
-                            st.session_state.multiple_title = metadata["title"]
-                            st.session_state.multiple_series = metadata["labels"]["series"]
-                            st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
-                            st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
+                                st.session_state.multiple_title = metadata["title"]
+                                st.session_state.multiple_series = metadata["labels"]["series"]
+                                st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
+                                st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
 
-                        xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
+                            xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
 
-                        file_name_columns = st.columns([1])
-                        file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
-                                                        key="multiple_file_name")
+                            file_name_columns = st.columns([1])
+                            file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
+                                                            key="multiple_file_name")
 
-                        axis_columns = st.columns([1, 2])
-                        x_index_ = axis_columns[0].radio("Select X Axis",
-                                                         [
-                                                             st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                                                         index=0)
-                        y_index__ = axis_columns[1].multiselect(
-                            'Select Y Axes',
-                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                            default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
-                                1 if len(st.session_state.multiple_series) else 0]
-                        )
+                            axis_columns = st.columns([1, 2])
+                            x_index_ = axis_columns[0].radio("Select X Axis",
+                                                             [
+                                                                 st.session_state.multiple_xaxis] + st.session_state.multiple_series,
+                                                             index=0)
+                            y_index__ = axis_columns[1].multiselect(
+                                'Select Y Axes',
+                                [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
+                                default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
+                                    1 if len(st.session_state.multiple_series) else 0]
+                            )
 
-                        st.session_state.multiple_x_index = (
-                                [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                            x_index_)
-                        st.session_state.multiple_yaxes = list(
-                            map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                                z),
-                                y_index__))
+                            st.session_state.multiple_x_index = (
+                                    [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                                x_index_)
+                            st.session_state.multiple_yaxes = list(
+                                map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                                    z),
+                                    y_index__))
 
                         with st.expander("Labels"):
                             label_columns = st.columns([1, 1])
@@ -612,6 +687,24 @@ elif selected == "Folder Analysis":
                                 st.text_input("Value", value=st.session_state.multiple_y_multiplication_value,
                                               disabled=True, key="multiple_y_show_value")
 
+                        with st.expander("Data Modifier"):
+                            modifier_selector_columns = st.columns([1, 1, 1])
+                            modifier_selector_columns[0].checkbox(label="Modify data?", key="multiple_modify_data")
+                            modifier_selector_columns[1].write(f"Total data points: {data.shape[0]}")
+                            modifier_columns = st.columns([1, 1, 1])
+                            modifier_columns[0].number_input(
+                                label="Start Point", value=0,
+                                key="multiple_modify_min",
+                            )
+                            modifier_columns[1].number_input(
+                                label="End Point", value=data.shape[0],
+                                key="multiple_modify_max"
+                            )
+                            modifier_columns[2].number_input(
+                                label="Step", value=st.session_state.multiple_modify_step,
+                                key="multiple_modify_step"
+                            )
+
                         if st.button("Plot XVG"):
                             if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
                                 for y in st.session_state.multiple_yaxes:
@@ -625,7 +718,14 @@ elif selected == "Folder Analysis":
                                     else:
                                         x_multiplier = 1
 
-                                    plt.plot(data[..., st.session_state.single_x_index] * x_multiplier, data[..., y] * y_multiplier)
+                                    if st.session_state.multiple_modify_data:
+                                        data = data[
+                                               st.session_state.multiple_modify_min:st.session_state.multiple_modify_max:st.session_state.multiple_modify_step]
+
+                                    modifier_selector_columns[2].write(f"Current data points: {data.shape[0]}")
+
+                                    plt.plot(data[..., st.session_state.single_x_index] * x_multiplier,
+                                             data[..., y] * y_multiplier)
 
                                 if st.session_state.multiple_legend_show:
                                     plt.legend(st.session_state.multiple_series,
