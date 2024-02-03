@@ -818,7 +818,7 @@ footer = """<style>
 </style>
 
 <div class="footer">
-    <p>XVG Plotter, Version 0.5.0</p>
+    <p>XVG Plotter, Version 0.6.0</p>
     <p><a href="https://www.linkedin.com/in/dilwarhossain" target="_blank">Dilwar Hossain Noor</a></p>
     <p><a href="https://github.com/bio-grids/xvg-plotter" target="_blank">GitHub</a>, <a href="https://hub.docker.com/r/firesimulations/xvg-plotter" target="_blank">DockerHub</a></p>
 </div>
