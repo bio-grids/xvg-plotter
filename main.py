@@ -54,6 +54,14 @@ if "single_series" not in st.session_state:
     st.session_state.single_series = []
 if "single_plot_show" not in st.session_state:
     st.session_state.single_plot_show = False
+if "single_multiply_x" not in st.session_state:
+    st.session_state.single_multiply_x = False
+if "single_x_multiplication_value" not in st.session_state:
+    st.session_state.single_x_multiplication_value = 1
+if "single_multiply_y" not in st.session_state:
+    st.session_state.single_multiply_y = False
+if "single_y_multiplication_value" not in st.session_state:
+    st.session_state.single_y_multiplication_value = 1
 
 if "multiple_img" not in st.session_state:
     st.session_state.multiple_img = BytesIO()
@@ -101,6 +109,14 @@ if "multiple_legend_loc" not in st.session_state:
     st.session_state.multiple_legend_loc = "best"
 if "multiple_legend_size" not in st.session_state:
     st.session_state.multiple_legend_size = 12
+if "multiple_multiply_x" not in st.session_state:
+    st.session_state.multiple_multiply_x = False
+if "multiple_x_multiplication_value" not in st.session_state:
+    st.session_state.multiple_x_multiplication_value = 1
+if "multiple_multiply_y" not in st.session_state:
+    st.session_state.multiple_multiply_y = False
+if "multiple_y_multiplication_value" not in st.session_state:
+    st.session_state.multiple_y_multiplication_value = 1
 
 if "docker_project_path" not in st.session_state:
     st.session_state.docker_project_path: pathlib.Path = Path("/projects")
@@ -183,7 +199,7 @@ if selected == "Single File Analysis":
 
                 with st.expander("Title"):
                     title_columns = st.columns([1, 1, 1])
-                    title_columns[0].checkbox(label="Show Title", key="single_title_show")
+                    title_columns[0].checkbox(label="Show Title?", key="single_title_show")
                     title_columns[0].text_input(label="Title", value=st.session_state.single_title,
                                                 key="single_title_updated")
                     title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
@@ -193,17 +209,41 @@ if selected == "Single File Analysis":
 
                 with st.expander("Legends"):
                     legend_columns = st.columns([1, 1, 1])
-                    legend_columns[0].checkbox(label="Show Legend", key="single_legend_show")
+                    legend_columns[0].checkbox(label="Show Legend?", key="single_legend_show")
                     legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
                                              key="single_legend_size")
                     legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc",
                                                 options=legend_locations,
                                                 index=0)
 
+                with st.expander("Axis Multiplication"):
+                    multiplier_x_column = st.columns([1, 3, 1])
+                    multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="single_multiply_x")
+                    multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000, key="single_x_multiplication_value")
+                    with multiplier_x_column[2]:
+                        st.text_input("Value", value=st.session_state.single_x_multiplication_value, disabled=True, key="single_x_show_value")
+
+                    multiplier_y_column = st.columns([1, 3, 1])
+                    multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="single_multiply_y")
+                    multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                                      key="single_y_multiplication_value")
+                    with multiplier_y_column[2]:
+                        st.text_input("Value", value=st.session_state.single_y_multiplication_value, disabled=True, key="single_y_show_value")
+
                 if st.button("Plot XVG"):
                     if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
                         for y in st.session_state.single_yaxes:
-                            plt.plot(data[..., st.session_state.single_x_index], data[..., y])
+                            if st.session_state.single_multiply_y:
+                                y_multiplier = st.session_state.single_y_multiplication_value
+                            else:
+                                y_multiplier = 1
+
+                            if st.session_state.single_multiply_x:
+                                x_multiplier = st.session_state.single_x_multiplication_value
+                            else:
+                                x_multiplier = 1
+
+                            plt.plot(data[..., st.session_state.single_x_index] * x_multiplier, data[..., y] * y_multiplier)
 
                         if st.session_state.single_legend_show:
                             plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
@@ -371,10 +411,37 @@ elif selected == "Folder Analysis":
                                                     options=legend_locations,
                                                     index=0)
 
+                    with st.expander("Axis Multiplication"):
+                        multiplier_x_column = st.columns([1, 3, 1])
+                        multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="multiple_multiply_x")
+                        multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                                            key="multiple_x_multiplication_value")
+                        with multiplier_x_column[2]:
+                            st.text_input("Value", value=st.session_state.multiple_x_multiplication_value,
+                                          disabled=True, key="multiple_x_show_value")
+
+                        multiplier_y_column = st.columns([1, 3, 1])
+                        multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="multiple_multiply_y")
+                        multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                                            key="multiple_y_multiplication_value")
+                        with multiplier_y_column[2]:
+                            st.text_input("Value", value=st.session_state.multiple_y_multiplication_value,
+                                          disabled=True, key="multiple_y_show_value")
+
                     if st.button("Plot XVG"):
                         if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
                             for y in st.session_state.multiple_yaxes:
-                                plt.plot(data[..., st.session_state.multiple_x_index], data[..., y])
+                                if st.session_state.multiple_multiply_y:
+                                    y_multiplier = st.session_state.multiple_y_multiplication_value
+                                else:
+                                    y_multiplier = 1
+
+                                if st.session_state.multiple_multiply_x:
+                                    x_multiplier = st.session_state.multiple_x_multiplication_value
+                                else:
+                                    x_multiplier = 1
+
+                                plt.plot(data[..., st.session_state.single_x_index] * x_multiplier, data[..., y] * y_multiplier)
 
                             if st.session_state.multiple_legend_show:
                                 plt.legend(st.session_state.multiple_series,
@@ -528,10 +595,37 @@ elif selected == "Folder Analysis":
                                                         options=legend_locations,
                                                         index=0)
 
+                        with st.expander("Axis Multiplication"):
+                            multiplier_x_column = st.columns([1, 3, 1])
+                            multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="multiple_multiply_x")
+                            multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                                                key="multiple_x_multiplication_value")
+                            with multiplier_x_column[2]:
+                                st.text_input("Value", value=st.session_state.multiple_x_multiplication_value,
+                                              disabled=True, key="multiple_x_show_value")
+
+                            multiplier_y_column = st.columns([1, 3, 1])
+                            multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="multiple_multiply_y")
+                            multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                                                key="multiple_y_multiplication_value")
+                            with multiplier_y_column[2]:
+                                st.text_input("Value", value=st.session_state.multiple_y_multiplication_value,
+                                              disabled=True, key="multiple_y_show_value")
+
                         if st.button("Plot XVG"):
                             if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
                                 for y in st.session_state.multiple_yaxes:
-                                    plt.plot(data[..., st.session_state.multiple_x_index], data[..., y])
+                                    if st.session_state.multiple_multiply_y:
+                                        y_multiplier = st.session_state.multiple_y_multiplication_value
+                                    else:
+                                        y_multiplier = 1
+
+                                    if st.session_state.multiple_multiply_x:
+                                        x_multiplier = st.session_state.multiple_x_multiplication_value
+                                    else:
+                                        x_multiplier = 1
+
+                                    plt.plot(data[..., st.session_state.single_x_index] * x_multiplier, data[..., y] * y_multiplier)
 
                                 if st.session_state.multiple_legend_show:
                                     plt.legend(st.session_state.multiple_series,
