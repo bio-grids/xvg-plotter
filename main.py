@@ -155,8 +155,8 @@ hide_st_style = """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 selected = option_menu(
-    None, ["Single File Analysis", "Folder Analysis", "Documentation"],
-    icons=['cloud-upload', "list-task", "file-earmark-medical"],
+    None, ["Single File Analysis", "Comparison Analysis", "Folder Analysis", "Documentation"],
+    icons=['cloud-upload', "arrows-collapse-vertical", "list-task", "file-earmark-medical"],
     menu_icon="cast", default_index=0, orientation="horizontal"
 )
 
@@ -199,6 +199,47 @@ def main_options(value: str, xvg, string_data: str):
             y_index__))
 
     return data
+
+
+def main_options_comparison(value: str, xvg, string_data1: str, string_data2: str):
+    metadata, data = parse_xvg(string_data1)
+    metadata2, data2 = parse_xvg(string_data2)
+
+    st.session_state[f"{value}_title"] = metadata["title"]
+    st.session_state[f"{value}_series"] = metadata["labels"]["series"]
+    st.session_state[f"{value}_xaxis"] = metadata["labels"]["xaxis"]
+    st.session_state[f"{value}_yaxis"] = metadata["labels"]["yaxis"]
+
+    xvg_file_value: str = ""
+    if value == "single":
+        st.session_state[f"{value}_xvg_file_name"] = os.path.splitext(xvg.name)[0]
+        xvg_file_value = st.session_state[f"{value}_xvg_file_name"]
+    elif value == "multiple":
+        xvg_file_value = os.path.splitext(st.session_state[f"{value}_xvg_file_name"])[0]
+
+    file_name_columns = st.columns([1])
+    file_name_columns[0].text_input(label="File Name", value=xvg_file_value,
+                                    key=f"{value}_file_name")
+
+    axis_columns = st.columns([1, 2])
+    x_index_ = axis_columns[0].radio("Select X Axis",
+                                     [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"],
+                                     index=0)
+    y_index__ = axis_columns[1].multiselect(
+        'Select Y Axes',
+        [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"],
+        default=([st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"])[
+            1 if len(st.session_state[f"{value}_series"]) else 0]
+    )
+
+    st.session_state[f"{value}_x_index"] = (
+            [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"]).index(
+        x_index_)
+    st.session_state[f"{value}_yaxes"] = list(
+        map(lambda z: ([st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"]).index(z),
+            y_index__))
+
+    return data, data2
 
 
 def label_options(value: str):
@@ -324,6 +365,54 @@ def plotting(value: str, data: npt.NDArray, columns):
         st.session_state[f"{value}_plot_show"] = True
 
 
+def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, columns):
+    if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
+        f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
+        for y in st.session_state[f"{value}_yaxes"]:
+            if st.session_state[f"{value}_multiply_y"]:
+                y_multiplier = st.session_state[f"{value}_y_multiplication_value"]
+            else:
+                y_multiplier = 1
+
+            if st.session_state[f"{value}_multiply_x"]:
+                x_multiplier = st.session_state[f"{value}_x_multiplication_value"]
+            else:
+                x_multiplier = 1
+
+            if st.session_state[f"{value}_modify_data"]:
+                data = data[
+                       st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:st.session_state[
+                           f"{value}_modify_step"]]
+                data1 = data1[
+                        st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                        st.session_state[
+                            f"{value}_modify_step"]]
+
+            columns[2].write(f"Current data points: {data.shape[0]}")
+
+            plt.plot(data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     data[..., y] * y_multiplier)
+            plt.plot(data1[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     data1[..., y] * y_multiplier)
+
+        if st.session_state[f"{value}_legend_show"]:
+            plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
+                       fontsize=st.session_state[f"{value}_legend_size"])
+        if st.session_state[f"{value}_title_show"]:
+            plt.title(label=st.session_state[f"{value}_title_updated"],
+                      loc=st.session_state[f"{value}_title_loc"],
+                      fontdict={"fontsize": st.session_state[f"{value}_title_size"]}, pad=16)
+        xaxis_updated = st.session_state[f'{value}_xaxis_updated']
+        yaxis_updated = st.session_state[f'{value}_yaxis_updated']
+        plt.xlabel(fr"{xaxis_updated}",
+                   fontsize=st.session_state[f"{value}_label_size"])
+        plt.ylabel(fr"{yaxis_updated}",
+                   fontsize=st.session_state[f"{value}_label_size"])
+        plt.savefig(st.session_state[f"{value}_img"], format='png', dpi=600)
+
+        st.session_state[f"{value}_plot_show"] = True
+
+
 def plotter(value: str):
     with st.container(border=True):
         plot_columns = st.columns([2, 1])
@@ -376,6 +465,46 @@ if selected == "Single File Analysis":
 
                 if st.button("Plot XVG"):
                     plotting("single", data, modifier_selector_columns)
+
+    with wrapper_columns[1]:
+        plotter("single")
+
+if selected == "Comparison Analysis":
+    wrapper_columns = st.columns([3, 2])
+
+    with wrapper_columns[0]:
+        with st.container(border=True):
+            files = st.columns([1, 1])
+            xvg1 = files[0].file_uploader(label="Upload XVG File 1", accept_multiple_files=False, type=["xvg"])
+            xvg2 = files[1].file_uploader(label="Upload XVG File 2", accept_multiple_files=False, type=["xvg"])
+
+        if xvg1 is not None and xvg2 is not None:
+            with st.expander("Main Options", expanded=True):
+                stringio1 = StringIO(xvg1.getvalue().decode("utf-8"))
+                stringio2 = StringIO(xvg2.getvalue().decode("utf-8"))
+
+                string_data1 = stringio1.read()
+                string_data2 = stringio2.read()
+
+                data1, data2 = main_options_comparison("single", xvg1, string_data1, string_data2)
+
+            with st.expander("Labels"):
+                label_options("single")
+
+            with st.expander("Title"):
+                title_options("single")
+
+            with st.expander("Legends"):
+                legend_options("single")
+
+            with st.expander("Axis Multiplication"):
+                axis_multiplication_options("single")
+
+            with st.expander("Data Modifier"):
+                modifier_selector_columns, modifier_columns = modifier_options("single", data1.shape[0])
+
+            if st.button("Plot XVG"):
+                plotting_comparison("single", data1, data2, modifier_selector_columns)
 
     with wrapper_columns[1]:
         plotter("single")
