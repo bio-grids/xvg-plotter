@@ -12,6 +12,16 @@ from utils import parse_xvg, legend_locations
 
 st.set_page_config(layout="wide", page_title="XVG Plotter")
 
+if "test_values" not in st.session_state:
+    st.session_state.test_values: dict = {
+        "file_name": "test",
+        "title": "Title",
+        "title_updated": "",
+        "title_size": 20,
+        "legend_show": False
+    }
+    # st.session_state.test_values: dict = {}
+
 if "single_img" not in st.session_state:
     st.session_state.single_img = BytesIO()
 if "single_file_name" not in st.session_state:
@@ -159,7 +169,23 @@ selected = option_menu(
     menu_icon="cast", default_index=0, orientation="horizontal"
 )
 
+
+def show_values(value: str):
+    wrapper_columns = st.columns([3, 2])
+    wrapper_columns[0].write(st.session_state[f"{value}_file_name"])
+    wrapper_columns[0].text_input(label="File Name", value=st.session_state[f"{value}_file_name"],
+                                  key=f"{value}_file_name")
+    wrapper_columns[1].text_input(label="Title", value=st.session_state[f"{value}_title"],
+                                  key=f"{value}_title")
+
+    return wrapper_columns
+
+
 if selected == "Single File Analysis":
+    show_values("single")
+    show_values("multiple")
+    st.write(st.session_state)
+
     wrapper_columns = st.columns([3, 2])
 
     with wrapper_columns[0]:
@@ -636,7 +662,8 @@ elif selected == "Folder Analysis":
                                     [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
                                 x_index_)
                             st.session_state.multiple_yaxes = list(
-                                map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
+                                map(lambda z: (
+                                        [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
                                     z),
                                     y_index__))
 
