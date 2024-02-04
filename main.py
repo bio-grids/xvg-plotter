@@ -383,6 +383,8 @@ def limit_options(value: str):
 def plotting(value: str, data: npt.NDArray, columns):
     if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
         f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
+        data_shape = 0
+
         for y in st.session_state[f"{value}_yaxes"]:
             if st.session_state[f"{value}_multiply_y"]:
                 y_multiplier = st.session_state[f"{value}_y_multiplication_value"]
@@ -394,17 +396,20 @@ def plotting(value: str, data: npt.NDArray, columns):
             else:
                 x_multiplier = 1
 
+            new_data = data
             if st.session_state[f"{value}_modify_data"]:
-                data = data[
+                new_data = new_data[
                        st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:st.session_state[
                            f"{value}_modify_step"]]
 
-            columns[2].write(f"Current data points: {data.shape[0]}")
+            st.session_state[f"{value}_csv_data"] = new_data
 
-            plt.plot(data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
-                     data[..., y] * y_multiplier)
+            data_shape = new_data.shape[0]
 
-            st.session_state.single_csv_data = data
+            plt.plot(new_data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     new_data[..., y] * y_multiplier)
+
+        columns[2].write(f"Current data points: {data_shape}")
 
         if st.session_state[f"{value}_legend_show"]:
             plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
@@ -432,6 +437,8 @@ def plotting(value: str, data: npt.NDArray, columns):
 def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, columns):
     if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
         f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
+        data_shape = 0
+
         for y in st.session_state[f"{value}_yaxes"]:
             if st.session_state[f"{value}_multiply_y"]:
                 y_multiplier = st.session_state[f"{value}_y_multiplication_value"]
@@ -443,23 +450,27 @@ def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, colum
             else:
                 x_multiplier = 1
 
+            new_data = data
+            new_data1 = data1
             if st.session_state[f"{value}_modify_data"]:
-                data = data[
+                new_data = new_data[
                        st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:st.session_state[
                            f"{value}_modify_step"]]
-                data1 = data1[
+                new_data1 = new_data1[
                         st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
                         st.session_state[
                             f"{value}_modify_step"]]
 
-            columns[2].write(f"Current data points: {data.shape[0]}")
+            data_shape = new_data.shape[0]
 
-            plt.plot(data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
-                     data[..., y] * y_multiplier)
-            plt.plot(data1[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
-                     data1[..., y] * y_multiplier)
+            plt.plot(new_data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     new_data[..., y] * y_multiplier)
+            plt.plot(new_data1[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     new_data1[..., y] * y_multiplier)
 
-            st.session_state.single_csv_data = np.hstack((data, data1))
+            st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1))
+
+        columns[2].write(f"Current data points: {data_shape}")
 
         if st.session_state[f"{value}_legend_show"]:
             plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
@@ -489,7 +500,7 @@ def plotter(value: str):
         if st.session_state[f"{value}_img"] and st.session_state[f"{value}_file_name"] and st.session_state[
             f"{value}_plot_show"]:
             with io.BytesIO() as buffer:
-                np.savetxt(buffer, st.session_state.single_csv_data, delimiter=",")
+                np.savetxt(buffer, st.session_state[f"{value}_csv_data"], delimiter=",")
                 plot_columns[1].download_button(
                     label="Download CSV",
                     data=buffer,
@@ -505,6 +516,18 @@ def plotter(value: str):
             )
 
             st.pyplot(plt)
+
+            if selected != "Comparison Analysis":
+                if st.button("Show Data Points"):
+                    raw_range = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]
+
+                    converted_range = raw_range[:len(st.session_state[f"{value}_series"])]
+
+                    columns = ["x"] + converted_range
+
+                    df = pd.DataFrame(st.session_state[f"{value}_csv_data"], columns=columns)
+
+                    st.line_chart(df, x="x", y=[converted_range[x - 1] for x in st.session_state[f"{value}_yaxes"]])
 
 
 if selected == "Single File Analysis":
