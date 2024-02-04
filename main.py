@@ -7,6 +7,7 @@ from typing import Literal, List
 import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_option_menu import option_menu
+import numpy.typing as npt
 
 from utils import parse_xvg, legend_locations
 
@@ -159,6 +160,189 @@ selected = option_menu(
     menu_icon="cast", default_index=0, orientation="horizontal"
 )
 
+
+def main_options(value: str, xvg, string_data: str):
+    metadata, data = parse_xvg(string_data)
+
+    st.session_state[f"{value}_title"] = metadata["title"]
+    st.session_state[f"{value}_series"] = metadata["labels"]["series"]
+    st.session_state[f"{value}_xaxis"] = metadata["labels"]["xaxis"]
+    st.session_state[f"{value}_yaxis"] = metadata["labels"]["yaxis"]
+
+    xvg_file_value: str = ""
+    if value == "single":
+        st.session_state[f"{value}_xvg_file_name"] = os.path.splitext(xvg.name)[0]
+        xvg_file_value = st.session_state[f"{value}_xvg_file_name"]
+    elif value == "multiple":
+        xvg_file_value = os.path.splitext(st.session_state[f"{value}_xvg_file_name"])[0]
+
+    file_name_columns = st.columns([1])
+    file_name_columns[0].text_input(label="File Name", value=xvg_file_value,
+                                    key=f"{value}_file_name")
+
+    axis_columns = st.columns([1, 2])
+    x_index_ = axis_columns[0].radio("Select X Axis",
+                                     [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"],
+                                     index=0)
+    y_index__ = axis_columns[1].multiselect(
+        'Select Y Axes',
+        [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"],
+        default=([st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"])[
+            1 if len(st.session_state[f"{value}_series"]) else 0]
+    )
+
+    st.session_state[f"{value}_x_index"] = (
+            [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"]).index(
+        x_index_)
+    st.session_state[f"{value}_yaxes"] = list(
+        map(lambda z: ([st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"]).index(z),
+            y_index__))
+
+    return data
+
+
+def label_options(value: str):
+    label_columns = st.columns([1, 1])
+    label_columns[0].text_input(label="X Label", value=st.session_state[f"{value}_xaxis"],
+                                key=f"{value}_xaxis_updated")
+    label_columns[1].text_input(label="Y Label", value=st.session_state[f"{value}_yaxis"],
+                                key=f"{value}_yaxis_updated")
+
+    size_columns = st.columns([1])
+    size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
+                           key=f"{value}_label_size")
+
+    return label_columns, size_columns
+
+
+def title_options(value: str):
+    columns = st.columns([1, 1, 1])
+    columns[0].checkbox(label="Show Title?", key=f"{value}_title_show")
+    columns[0].text_input(label="Title", value=st.session_state[f"{value}_title"],
+                          key=f"{value}_title_updated")
+    columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
+                      key=f"{value}_title_size")
+    columns[2].selectbox(label="Title Location", key=f"{value}_title_loc",
+                         options=["center", "left", "right"], index=0)
+
+    return columns
+
+
+def legend_options(value: str):
+    columns = st.columns([1, 1, 1])
+    columns[0].checkbox(label="Show Legend?", key=f"{value}_legend_show")
+    columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
+                      key=f"{value}_legend_size")
+    columns[2].selectbox(label="Legend Location", key=f"{value}_legend_loc",
+                         options=legend_locations,
+                         index=0)
+
+    return columns
+
+
+def axis_multiplication_options(value: str):
+    multiplier_x_column = st.columns([1, 3, 1])
+    multiplier_x_column[0].checkbox(label="Multiply X Axis?", key=f"{value}_multiply_x")
+    multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                        key=f"{value}_x_multiplication_value")
+    with multiplier_x_column[2]:
+        st.text_input("Value", value=st.session_state[f"{value}_x_multiplication_value"], disabled=True,
+                      key=f"{value}_x_show_value")
+
+    multiplier_y_column = st.columns([1, 3, 1])
+    multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key=f"{value}_multiply_y")
+    multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
+                                        key=f"{value}_y_multiplication_value")
+    with multiplier_y_column[2]:
+        st.text_input("Value", value=st.session_state[f"{value}_y_multiplication_value"], disabled=True,
+                      key=f"{value}_y_show_value")
+
+    return multiplier_x_column, multiplier_y_column
+
+
+def modifier_options(value: str, points: int):
+    modifier_selector_columns = st.columns([1, 1, 1])
+    modifier_selector_columns[0].checkbox(label="Modify data?", key=f"{value}_modify_data")
+    modifier_selector_columns[1].write(f"Total data points: {points}")
+
+    modifier_columns = st.columns([1, 1, 1])
+    modifier_columns[0].number_input(
+        label="Start Point", value=0,
+        key=f"{value}_modify_min",
+    )
+    modifier_columns[1].number_input(
+        label="End Point", value=points,
+        key=f"{value}_modify_max"
+    )
+    modifier_columns[2].number_input(
+        label="Step", value=1,
+        key=f"{value}_modify_step"
+    )
+
+    return modifier_selector_columns, modifier_columns
+
+
+def plotting(value: str, data: npt.NDArray, columns):
+    if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
+        f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
+        for y in st.session_state[f"{value}_yaxes"]:
+            if st.session_state[f"{value}_multiply_y"]:
+                y_multiplier = st.session_state[f"{value}_y_multiplication_value"]
+            else:
+                y_multiplier = 1
+
+            if st.session_state[f"{value}_multiply_x"]:
+                x_multiplier = st.session_state[f"{value}_x_multiplication_value"]
+            else:
+                x_multiplier = 1
+
+            if st.session_state[f"{value}_modify_data"]:
+                data = data[
+                       st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:st.session_state[
+                           f"{value}_modify_step"]]
+
+            columns[2].write(f"Current data points: {data.shape[0]}")
+
+            plt.plot(data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     data[..., y] * y_multiplier)
+
+        if st.session_state[f"{value}_legend_show"]:
+            plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
+                       fontsize=st.session_state[f"{value}_legend_size"])
+        if st.session_state[f"{value}_title_show"]:
+            plt.title(label=st.session_state[f"{value}_title_updated"],
+                      loc=st.session_state[f"{value}_title_loc"],
+                      fontdict={"fontsize": st.session_state[f"{value}_title_size"]}, pad=16)
+        xaxis_updated = st.session_state[f'{value}_xaxis_updated']
+        yaxis_updated = st.session_state[f'{value}_yaxis_updated']
+        plt.xlabel(fr"{xaxis_updated}",
+                   fontsize=st.session_state[f"{value}_label_size"])
+        plt.ylabel(fr"{yaxis_updated}",
+                   fontsize=st.session_state[f"{value}_label_size"])
+        plt.savefig(st.session_state[f"{value}_img"], format='png', dpi=600)
+
+        st.session_state[f"{value}_plot_show"] = True
+
+
+def plotter(value: str):
+    with st.container(border=True):
+        plot_columns = st.columns([2, 1])
+        plot_columns[0].subheader("Plot Visualization")
+
+        file_name = st.session_state[f"{value}_file_name"]
+
+        if st.session_state[f"{value}_img"] and st.session_state[f"{value}_file_name"] and st.session_state[
+            f"{value}_plot_show"]:
+            plot_columns[1].download_button(
+                label="Download Plot",
+                data=st.session_state[f"{value}_img"],
+                file_name=f"{file_name}.png",
+                mime="image/png"
+            )
+
+            st.pyplot(plt)
+
+
 if selected == "Single File Analysis":
     wrapper_columns = st.columns([3, 2])
 
@@ -173,152 +357,28 @@ if selected == "Single File Analysis":
 
                     string_data = stringio.read()
 
-                    metadata, data = parse_xvg(string_data)
-
-                    st.session_state.single_title = metadata["title"]
-                    st.session_state.single_series = metadata["labels"]["series"]
-                    st.session_state.single_xaxis = metadata["labels"]["xaxis"]
-                    st.session_state.single_yaxis = metadata["labels"]["yaxis"]
-                    st.session_state.single_xvg_file_name = os.path.splitext(xvg.name)[0]
-
-                    file_name_columns = st.columns([1])
-                    file_name_columns[0].text_input(label="File Name", value=st.session_state.single_xvg_file_name,
-                                                    key="single_file_name")
-
-                    axis_columns = st.columns([1, 2])
-                    x_index_ = axis_columns[0].radio("Select X Axis",
-                                                     [st.session_state.single_xaxis] + st.session_state.single_series,
-                                                     index=0)
-                    y_index__ = axis_columns[1].multiselect(
-                        'Select Y Axes',
-                        [st.session_state.single_xaxis] + st.session_state.single_series,
-                        default=([st.session_state.single_xaxis] + st.session_state.single_series)[
-                            1 if len(st.session_state.single_series) else 0]
-                    )
-
-                    st.session_state.single_x_index = (
-                            [st.session_state.single_xaxis] + st.session_state.single_series).index(
-                        x_index_)
-                    st.session_state.single_yaxes = list(
-                        map(lambda z: ([st.session_state.single_xaxis] + st.session_state.single_series).index(z),
-                            y_index__))
+                    data = main_options("single", xvg, string_data)
 
                 with st.expander("Labels"):
-                    label_columns = st.columns([1, 1])
-                    label_columns[0].text_input(label="X Label", value=st.session_state.single_xaxis,
-                                                key="single_xaxis_updated")
-                    label_columns[1].text_input(label="Y Label", value=st.session_state.single_yaxis,
-                                                key="single_yaxis_updated")
-
-                    size_columns = st.columns([1])
-                    size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
-                                           key="single_label_size")
+                    label_options("single")
 
                 with st.expander("Title"):
-                    title_columns = st.columns([1, 1, 1])
-                    title_columns[0].checkbox(label="Show Title?", key="single_title_show")
-                    title_columns[0].text_input(label="Title", value=st.session_state.single_title,
-                                                key="single_title_updated")
-                    title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
-                                            key="single_title_size")
-                    title_columns[2].selectbox(label="Title Location", key="single_title_loc",
-                                               options=["center", "left", "right"], index=0)
+                    title_options("single")
 
                 with st.expander("Legends"):
-                    legend_columns = st.columns([1, 1, 1])
-                    legend_columns[0].checkbox(label="Show Legend?", key="single_legend_show")
-                    legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
-                                             key="single_legend_size")
-                    legend_columns[2].selectbox(label="Legend Location", key="single_legend_loc",
-                                                options=legend_locations,
-                                                index=0)
+                    legend_options("single")
 
                 with st.expander("Axis Multiplication"):
-                    multiplier_x_column = st.columns([1, 3, 1])
-                    multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="single_multiply_x")
-                    multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                        key="single_x_multiplication_value")
-                    with multiplier_x_column[2]:
-                        st.text_input("Value", value=st.session_state.single_x_multiplication_value, disabled=True,
-                                      key="single_x_show_value")
-
-                    multiplier_y_column = st.columns([1, 3, 1])
-                    multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="single_multiply_y")
-                    multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                        key="single_y_multiplication_value")
-                    with multiplier_y_column[2]:
-                        st.text_input("Value", value=st.session_state.single_y_multiplication_value, disabled=True,
-                                      key="single_y_show_value")
+                    axis_multiplication_options("single")
 
                 with st.expander("Data Modifier"):
-                    modifier_selector_columns = st.columns([1, 1, 1])
-                    modifier_selector_columns[0].checkbox(label="Modify data?", key="single_modify_data")
-                    modifier_selector_columns[1].write(f"Total data points: {data.shape[0]}")
-                    modifier_columns = st.columns([1, 1, 1])
-                    modifier_columns[0].number_input(
-                        label="Start Point", value=0,
-                        key="single_modify_min",
-                    )
-                    modifier_columns[1].number_input(
-                        label="End Point", value=data.shape[0],
-                        key="single_modify_max"
-                    )
-                    modifier_columns[2].number_input(
-                        label="Step", value=st.session_state.single_modify_step,
-                        key="single_modify_step"
-                    )
+                    modifier_selector_columns, modifier_columns = modifier_options("single", data.shape[0])
 
                 if st.button("Plot XVG"):
-                    if st.session_state.single_file_name and st.session_state.single_xaxis and st.session_state.single_yaxis and st.session_state.single_label_size:
-                        for y in st.session_state.single_yaxes:
-                            if st.session_state.single_multiply_y:
-                                y_multiplier = st.session_state.single_y_multiplication_value
-                            else:
-                                y_multiplier = 1
-
-                            if st.session_state.single_multiply_x:
-                                x_multiplier = st.session_state.single_x_multiplication_value
-                            else:
-                                x_multiplier = 1
-
-                            if st.session_state.single_modify_data:
-                                data = data[
-                                       st.session_state.single_modify_min:st.session_state.single_modify_max:st.session_state.single_modify_step]
-
-                            modifier_selector_columns[2].write(f"Current data points: {data.shape[0]}")
-
-                            plt.plot(data[..., st.session_state.single_x_index] * x_multiplier,
-                                     data[..., y] * y_multiplier)
-
-                        if st.session_state.single_legend_show:
-                            plt.legend(st.session_state.single_series, loc=st.session_state.single_legend_loc,
-                                       fontsize=st.session_state.single_legend_size)
-                        if st.session_state.single_title_show:
-                            plt.title(label=st.session_state.single_title_updated,
-                                      loc=st.session_state.single_title_loc,
-                                      fontdict={"fontsize": st.session_state.single_title_size}, pad=16)
-                        plt.xlabel(fr"{st.session_state.single_xaxis_updated}",
-                                   fontsize=st.session_state.single_label_size)
-                        plt.ylabel(fr"{st.session_state.single_yaxis_updated}",
-                                   fontsize=st.session_state.single_label_size)
-                        plt.savefig(st.session_state.single_img, format='png', dpi=600)
-
-                        st.session_state.single_plot_show = True
+                    plotting("single", data, modifier_selector_columns)
 
     with wrapper_columns[1]:
-        with st.container(border=True):
-            plot_columns = st.columns([2, 1])
-            plot_columns[0].subheader("Plot Visualization")
-
-            if st.session_state.single_img and st.session_state.single_file_name and st.session_state.single_plot_show:
-                plot_columns[1].download_button(
-                    label="Download Plot",
-                    data=st.session_state.single_img,
-                    file_name=f"{st.session_state.single_file_name}.png",
-                    mime="image/png"
-                )
-
-                st.pyplot(plt)
+        plotter("single")
 
 elif selected == "Folder Analysis":
     IS_DOCKER = int(os.environ.get('IS_DOCKER', "0"))
@@ -396,160 +456,28 @@ elif selected == "Folder Analysis":
                             with open(xvg, "rb") as f:
                                 string_data = f.read().decode("utf-8")
 
-                            metadata, data = parse_xvg(string_data)
-
-                            st.session_state.multiple_title = metadata["title"]
-                            st.session_state.multiple_series = metadata["labels"]["series"]
-                            st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
-                            st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
-
-                        xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
-
-                        file_name_columns = st.columns([1])
-                        file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
-                                                        key="multiple_file_name")
-
-                        axis_columns = st.columns([1, 2])
-                        x_index_ = axis_columns[0].radio(
-                            "Select X Axis",
-                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                            index=0
-                        )
-                        y_index__ = axis_columns[1].multiselect(
-                            'Select Y Axes',
-                            [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                            default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
-                                1 if len(st.session_state.multiple_series) else 0]
-                        )
-
-                        st.session_state.multiple_x_index = (
-                                [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                            x_index_)
-                        st.session_state.multiple_yaxes = list(
-                            map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                                z),
-                                y_index__))
+                            data = main_options("multiple", xvg, string_data)
 
                     with st.expander("Labels"):
-                        label_columns = st.columns([1, 1])
-                        label_columns[0].text_input(label="X Label", value=st.session_state.multiple_xaxis,
-                                                    key="multiple_xaxis_updated")
-                        label_columns[1].text_input(label="Y Label", value=st.session_state.multiple_yaxis,
-                                                    key="multiple_yaxis_updated")
-
-                        size_columns = st.columns([1])
-                        size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
-                                               key="multiple_label_size")
+                        label_options("multiple")
 
                     with st.expander("Title"):
-                        title_columns = st.columns([1, 1, 1])
-                        title_columns[0].checkbox(label="Show Title", key="multiple_title_show")
-                        title_columns[0].text_input(label="Title", value=st.session_state.multiple_title,
-                                                    key="multiple_title_updated")
-                        title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
-                                                key="multiple_title_size")
-                        title_columns[2].selectbox(label="Title Location", key="multiple_title_loc",
-                                                   options=["center", "left", "right"], index=0)
+                        title_options("multiple")
 
                     with st.expander("Legends"):
-                        legend_columns = st.columns([1, 1, 1])
-                        legend_columns[0].checkbox(label="Show Legend", key="multiple_legend_show")
-                        legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
-                                                 key="multiple_legend_size")
-                        legend_columns[2].selectbox(label="Legend Location", key="multiple_legend_loc",
-                                                    options=legend_locations,
-                                                    index=0)
+                        legend_options("multiple")
 
                     with st.expander("Axis Multiplication"):
-                        multiplier_x_column = st.columns([1, 3, 1])
-                        multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="multiple_multiply_x")
-                        multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                            key="multiple_x_multiplication_value")
-                        with multiplier_x_column[2]:
-                            st.text_input("Value", value=st.session_state.multiple_x_multiplication_value,
-                                          disabled=True, key="multiple_x_show_value")
-
-                        multiplier_y_column = st.columns([1, 3, 1])
-                        multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="multiple_multiply_y")
-                        multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                            key="multiple_y_multiplication_value")
-                        with multiplier_y_column[2]:
-                            st.text_input("Value", value=st.session_state.multiple_y_multiplication_value,
-                                          disabled=True, key="multiple_y_show_value")
+                        axis_multiplication_options("multiple")
 
                     with st.expander("Data Modifier"):
-                        modifier_selector_columns = st.columns([1, 1, 1])
-                        modifier_selector_columns[0].checkbox(label="Modify data?", key="multiple_modify_data")
-                        modifier_selector_columns[1].write(f"Total data points: {data.shape[0]}")
-                        modifier_columns = st.columns([1, 1, 1])
-                        modifier_columns[0].number_input(
-                            label="Start Point", value=0,
-                            key="multiple_modify_min",
-                        )
-                        modifier_columns[1].number_input(
-                            label="End Point", value=data.shape[0],
-                            key="multiple_modify_max"
-                        )
-                        modifier_columns[2].number_input(
-                            label="Step", value=st.session_state.multiple_modify_step,
-                            key="multiple_modify_step"
-                        )
+                        modifier_selector_columns, modifier_columns = modifier_options("multiple", data.shape[0])
 
                     if st.button("Plot XVG"):
-                        if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
-                            for y in st.session_state.multiple_yaxes:
-                                if st.session_state.multiple_multiply_y:
-                                    y_multiplier = st.session_state.multiple_y_multiplication_value
-                                else:
-                                    y_multiplier = 1
-
-                                if st.session_state.multiple_multiply_x:
-                                    x_multiplier = st.session_state.multiple_x_multiplication_value
-                                else:
-                                    x_multiplier = 1
-
-                                if st.session_state.multiple_modify_data:
-                                    data = data[
-                                           st.session_state.multiple_modify_min:st.session_state.multiple_modify_max:st.session_state.multiple_modify_step]
-
-                                modifier_selector_columns[2].write(f"Current data points: {data.shape[0]}")
-
-                                plt.plot(data[..., st.session_state.single_x_index] * x_multiplier,
-                                         data[..., y] * y_multiplier)
-
-                            if st.session_state.multiple_legend_show:
-                                plt.legend(st.session_state.multiple_series,
-                                           loc=st.session_state.multiple_legend_loc,
-                                           fontsize=st.session_state.multiple_legend_size)
-                            if st.session_state.multiple_title_show:
-                                plt.title(
-                                    label=st.session_state.multiple_title_updated,
-                                    loc=st.session_state.multiple_title_loc,
-                                    fontdict={"fontsize": st.session_state.multiple_title_size},
-                                    pad=16
-                                )
-                            plt.xlabel(fr"{st.session_state.multiple_xaxis_updated}",
-                                       fontsize=st.session_state.multiple_label_size)
-                            plt.ylabel(fr"{st.session_state.multiple_yaxis_updated}",
-                                       fontsize=st.session_state.multiple_label_size)
-                            plt.savefig(st.session_state.multiple_img, format='png', dpi=600)
-
-                            st.session_state.multiple_plot_show = True
+                        plotting("multiple", data, modifier_selector_columns)
 
         with xvg_columns[1]:
-            with st.container(border=True):
-                plot_columns = st.columns([2, 1])
-                plot_columns[0].subheader("Plot Visualization")
-
-                if st.session_state.multiple_img and st.session_state.multiple_file_name and st.session_state.multiple_plot_show:
-                    plot_columns[1].download_button(
-                        label="Download Plot",
-                        data=st.session_state.multiple_img,
-                        file_name=f"{st.session_state.multiple_file_name}.png",
-                        mime="image/png"
-                    )
-
-                    st.pyplot(plt)
+            plotter("multiple")
 
     else:
         wrapper_columns = st.columns([3, 2])
@@ -607,159 +535,28 @@ elif selected == "Folder Analysis":
                                 with open(xvg, 'rb') as f:
                                     string_data = f.read().decode("utf-8")
 
-                                metadata, data = parse_xvg(string_data)
-
-                                st.session_state.multiple_title = metadata["title"]
-                                st.session_state.multiple_series = metadata["labels"]["series"]
-                                st.session_state.multiple_xaxis = metadata["labels"]["xaxis"]
-                                st.session_state.multiple_yaxis = metadata["labels"]["yaxis"]
-
-                            xvg_file_name = os.path.splitext(st.session_state.multiple_xvg_file_name)[0]
-
-                            file_name_columns = st.columns([1])
-                            file_name_columns[0].text_input(label="File Name", value=xvg_file_name,
-                                                            key="multiple_file_name")
-
-                            axis_columns = st.columns([1, 2])
-                            x_index_ = axis_columns[0].radio("Select X Axis",
-                                                             [
-                                                                 st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                                                             index=0)
-                            y_index__ = axis_columns[1].multiselect(
-                                'Select Y Axes',
-                                [st.session_state.multiple_xaxis] + st.session_state.multiple_series,
-                                default=([st.session_state.multiple_xaxis] + st.session_state.multiple_series)[
-                                    1 if len(st.session_state.multiple_series) else 0]
-                            )
-
-                            st.session_state.multiple_x_index = (
-                                    [st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                                x_index_)
-                            st.session_state.multiple_yaxes = list(
-                                map(lambda z: ([st.session_state.multiple_xaxis] + st.session_state.multiple_series).index(
-                                    z),
-                                    y_index__))
+                                data = main_options("multiple", xvg, string_data)
 
                         with st.expander("Labels"):
-                            label_columns = st.columns([1, 1])
-                            label_columns[0].text_input(label="X Label", value=st.session_state.multiple_xaxis,
-                                                        key="multiple_xaxis_updated")
-                            label_columns[1].text_input(label="Y Label", value=st.session_state.multiple_yaxis,
-                                                        key="multiple_yaxis_updated")
-
-                            size_columns = st.columns([1])
-                            size_columns[0].slider(label="Label Size", min_value=12, max_value=24, step=1, value=16,
-                                                   key="multiple_label_size")
+                            label_options("multiple")
 
                         with st.expander("Title"):
-                            title_columns = st.columns([1, 1, 1])
-                            title_columns[0].checkbox(label="Show Title", key="multiple_title_show")
-                            title_columns[0].text_input(label="Title", value=st.session_state.multiple_title,
-                                                        key="multiple_title_updated")
-                            title_columns[1].slider(label="Title Size", min_value=12, max_value=30, step=1, value=20,
-                                                    key="multiple_title_size")
-                            title_columns[2].selectbox(label="Title Location", key="multiple_title_loc",
-                                                       options=["center", "left", "right"], index=0)
+                            title_options("multiple")
 
                         with st.expander("Legends"):
-                            legend_columns = st.columns([1, 1, 1])
-                            legend_columns[0].checkbox(label="Show Legend", key="multiple_legend_show")
-                            legend_columns[1].slider(label="Legend Size", min_value=8, max_value=24, step=1, value=12,
-                                                     key="multiple_legend_size")
-                            legend_columns[2].selectbox(label="Legend Location", key="multiple_legend_loc",
-                                                        options=legend_locations,
-                                                        index=0)
+                            legend_options("multiple")
 
                         with st.expander("Axis Multiplication"):
-                            multiplier_x_column = st.columns([1, 3, 1])
-                            multiplier_x_column[0].checkbox(label="Multiply X Axis?", key="multiple_multiply_x")
-                            multiplier_x_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                                key="multiple_x_multiplication_value")
-                            with multiplier_x_column[2]:
-                                st.text_input("Value", value=st.session_state.multiple_x_multiplication_value,
-                                              disabled=True, key="multiple_x_show_value")
-
-                            multiplier_y_column = st.columns([1, 3, 1])
-                            multiplier_y_column[0].checkbox(label="Multiply Y Axis?", key="multiple_multiply_y")
-                            multiplier_y_column[1].number_input(label="Multiplication Value", value=1.0000,
-                                                                key="multiple_y_multiplication_value")
-                            with multiplier_y_column[2]:
-                                st.text_input("Value", value=st.session_state.multiple_y_multiplication_value,
-                                              disabled=True, key="multiple_y_show_value")
+                            axis_multiplication_options("multiple")
 
                         with st.expander("Data Modifier"):
-                            modifier_selector_columns = st.columns([1, 1, 1])
-                            modifier_selector_columns[0].checkbox(label="Modify data?", key="multiple_modify_data")
-                            modifier_selector_columns[1].write(f"Total data points: {data.shape[0]}")
-                            modifier_columns = st.columns([1, 1, 1])
-                            modifier_columns[0].number_input(
-                                label="Start Point", value=0,
-                                key="multiple_modify_min",
-                            )
-                            modifier_columns[1].number_input(
-                                label="End Point", value=data.shape[0],
-                                key="multiple_modify_max"
-                            )
-                            modifier_columns[2].number_input(
-                                label="Step", value=st.session_state.multiple_modify_step,
-                                key="multiple_modify_step"
-                            )
+                            modifier_selector_columns, modifier_columns = modifier_options("multiple", data.shape[0])
 
                         if st.button("Plot XVG"):
-                            if st.session_state.multiple_file_name and st.session_state.multiple_xaxis and st.session_state.multiple_yaxis and st.session_state.multiple_label_size:
-                                for y in st.session_state.multiple_yaxes:
-                                    if st.session_state.multiple_multiply_y:
-                                        y_multiplier = st.session_state.multiple_y_multiplication_value
-                                    else:
-                                        y_multiplier = 1
-
-                                    if st.session_state.multiple_multiply_x:
-                                        x_multiplier = st.session_state.multiple_x_multiplication_value
-                                    else:
-                                        x_multiplier = 1
-
-                                    if st.session_state.multiple_modify_data:
-                                        data = data[
-                                               st.session_state.multiple_modify_min:st.session_state.multiple_modify_max:st.session_state.multiple_modify_step]
-
-                                    modifier_selector_columns[2].write(f"Current data points: {data.shape[0]}")
-
-                                    plt.plot(data[..., st.session_state.single_x_index] * x_multiplier,
-                                             data[..., y] * y_multiplier)
-
-                                if st.session_state.multiple_legend_show:
-                                    plt.legend(st.session_state.multiple_series,
-                                               loc=st.session_state.multiple_legend_loc,
-                                               fontsize=st.session_state.multiple_legend_size)
-                                if st.session_state.multiple_title_show:
-                                    plt.title(
-                                        label=st.session_state.multiple_title_updated,
-                                        loc=st.session_state.multiple_title_loc,
-                                        fontdict={"fontsize": st.session_state.multiple_title_size},
-                                        pad=16
-                                    )
-                                plt.xlabel(fr"{st.session_state.multiple_xaxis_updated}",
-                                           fontsize=st.session_state.multiple_label_size)
-                                plt.ylabel(fr"{st.session_state.multiple_yaxis_updated}",
-                                           fontsize=st.session_state.multiple_label_size)
-                                plt.savefig(st.session_state.multiple_img, format='png', dpi=600)
-
-                                st.session_state.multiple_plot_show = True
+                            plotting("multiple", data, modifier_selector_columns)
 
         with wrapper_columns[1]:
-            with st.container(border=True):
-                plot_columns = st.columns([2, 1])
-                plot_columns[0].subheader("Plot Visualization")
-
-                if st.session_state.multiple_img and st.session_state.multiple_file_name and st.session_state.multiple_plot_show:
-                    plot_columns[1].download_button(
-                        label="Download Plot",
-                        data=st.session_state.multiple_img,
-                        file_name=f"{st.session_state.multiple_file_name}.png",
-                        mime="image/png"
-                    )
-
-                    st.pyplot(plt)
+            plotter("multiple")
 
 elif selected == "Documentation":
     st.markdown("""
