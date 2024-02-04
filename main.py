@@ -1,4 +1,5 @@
 import os
+import io
 import pathlib
 from io import StringIO, BytesIO
 from pathlib import Path
@@ -7,6 +8,8 @@ from typing import Literal, List
 import matplotlib.pyplot as plt
 import streamlit as st
 from streamlit_option_menu import option_menu
+import pandas as pd
+import numpy as np
 import numpy.typing as npt
 
 from utils import parse_xvg, legend_locations
@@ -83,6 +86,8 @@ if "single_y_lim_min" not in st.session_state:
     st.session_state.single_y_lim_min = 1
 if "single_y_lim_max" not in st.session_state:
     st.session_state.single_y_lim_max = 1
+if "single_csv_data" not in st.session_state:
+    st.session_state.single_csv_data = []
 
 if "multiple_img" not in st.session_state:
     st.session_state.multiple_img = BytesIO()
@@ -158,6 +163,8 @@ if "multiple_y_lim_min" not in st.session_state:
     st.session_state.multiple_y_lim_min = 1
 if "multiple_y_lim_max" not in st.session_state:
     st.session_state.multiple_y_lim_max = 1
+if "multiple_csv_data" not in st.session_state:
+    st.session_state.multiple_csv_data = []
 
 if "docker_project_path" not in st.session_state:
     st.session_state.docker_project_path: pathlib.Path = Path("/projects")
@@ -397,6 +404,8 @@ def plotting(value: str, data: npt.NDArray, columns):
             plt.plot(data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
                      data[..., y] * y_multiplier)
 
+            st.session_state.single_csv_data = data
+
         if st.session_state[f"{value}_legend_show"]:
             plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
                        fontsize=st.session_state[f"{value}_legend_size"])
@@ -450,6 +459,8 @@ def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, colum
             plt.plot(data1[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
                      data1[..., y] * y_multiplier)
 
+            st.session_state.single_csv_data = np.hstack((data, data1))
+
         if st.session_state[f"{value}_legend_show"]:
             plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
                        fontsize=st.session_state[f"{value}_legend_size"])
@@ -470,14 +481,23 @@ def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, colum
 
 def plotter(value: str):
     with st.container(border=True):
-        plot_columns = st.columns([2, 1])
-        plot_columns[0].subheader("Plot Visualization")
+        plot_columns = st.columns([1, 1, 1])
+        plot_columns[0].subheader("Visualization")
 
         file_name = st.session_state[f"{value}_file_name"]
 
         if st.session_state[f"{value}_img"] and st.session_state[f"{value}_file_name"] and st.session_state[
             f"{value}_plot_show"]:
-            plot_columns[1].download_button(
+            with io.BytesIO() as buffer:
+                np.savetxt(buffer, st.session_state.single_csv_data, delimiter=",")
+                plot_columns[1].download_button(
+                    label="Download CSV",
+                    data=buffer,
+                    file_name=f"{file_name}.csv",
+                    mime='text/csv'
+                )
+
+            plot_columns[2].download_button(
                 label="Download Plot",
                 data=st.session_state[f"{value}_img"],
                 file_name=f"{file_name}.png",
@@ -911,7 +931,7 @@ footer = """<style>
 </style>
 
 <div class="footer">
-    <p>XVG Plotter, Version 0.9.1</p>
+    <p>XVG Plotter, Version 0.10.0</p>
     <p><a href="https://www.linkedin.com/in/dilwarhossain" target="_blank">Dilwar Hossain Noor</a></p>
     <p><a href="https://github.com/bio-grids/xvg-plotter" target="_blank">GitHub</a>, <a href="https://hub.docker.com/r/firesimulations/xvg-plotter" target="_blank">DockerHub</a></p>
 </div>
