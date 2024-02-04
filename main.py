@@ -71,6 +71,18 @@ if "single_modify_max" not in st.session_state:
     st.session_state.single_modify_max = 1
 if "single_modify_step" not in st.session_state:
     st.session_state.single_modify_step = 1
+if "single_x_lim" not in st.session_state:
+    st.session_state.single_x_lim = False
+if "single_x_lim_min" not in st.session_state:
+    st.session_state.single_x_lim_min = 1
+if "single_x_lim_max" not in st.session_state:
+    st.session_state.single_x_lim_max = 1
+if "single_y_lim" not in st.session_state:
+    st.session_state.single_y_lim = False
+if "single_y_lim_min" not in st.session_state:
+    st.session_state.single_y_lim_min = 1
+if "single_y_lim_max" not in st.session_state:
+    st.session_state.single_y_lim_max = 1
 
 if "multiple_img" not in st.session_state:
     st.session_state.multiple_img = BytesIO()
@@ -134,6 +146,18 @@ if "multiple_modify_max" not in st.session_state:
     st.session_state.multiple_modify_max = 1
 if "multiple_modify_step" not in st.session_state:
     st.session_state.multiple_modify_step = 1
+if "multiple_x_lim" not in st.session_state:
+    st.session_state.multiple_x_lim = False
+if "multiple_x_lim_min" not in st.session_state:
+    st.session_state.multiple_x_lim_min = 1
+if "multiple_x_lim_max" not in st.session_state:
+    st.session_state.multiple_x_lim_max = 1
+if "multiple_y_lim" not in st.session_state:
+    st.session_state.multiple_y_lim = False
+if "multiple_y_lim_min" not in st.session_state:
+    st.session_state.multiple_y_lim_min = 1
+if "multiple_y_lim_max" not in st.session_state:
+    st.session_state.multiple_y_lim_max = 1
 
 if "docker_project_path" not in st.session_state:
     st.session_state.docker_project_path: pathlib.Path = Path("/projects")
@@ -323,6 +347,32 @@ def modifier_options(value: str, points: int):
     return modifier_selector_columns, modifier_columns
 
 
+def limit_options(value: str):
+    x_columns = st.columns([1, 1, 1])
+    x_columns[0].checkbox(label="Limit X Axis?", key=f"{value}_x_lim")
+    x_columns[1].number_input(
+        label="Min", value=1.000,
+        key=f"{value}_x_lim_min"
+    )
+    x_columns[2].number_input(
+        label="Max", value=1.000,
+        key=f"{value}_x_lim_max"
+    )
+
+    y_columns = st.columns([1, 1, 1])
+    y_columns[0].checkbox(label="Limit Y Axis?", key=f"{value}_y_lim")
+    y_columns[1].number_input(
+        label="Min", value=1.000,
+        key=f"{value}_y_lim_min"
+    )
+    y_columns[2].number_input(
+        label="Max", value=1.000,
+        key=f"{value}_y_lim_max"
+    )
+
+    return x_columns, y_columns
+
+
 def plotting(value: str, data: npt.NDArray, columns):
     if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
         f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
@@ -360,6 +410,11 @@ def plotting(value: str, data: npt.NDArray, columns):
                    fontsize=st.session_state[f"{value}_label_size"])
         plt.ylabel(fr"{yaxis_updated}",
                    fontsize=st.session_state[f"{value}_label_size"])
+        if st.session_state[f'{value}_x_lim']:
+            plt.xlim(st.session_state[f'{value}_x_lim_min'], st.session_state[f'{value}_x_lim_max'])
+        if st.session_state[f'{value}_y_lim']:
+            plt.ylim(st.session_state[f'{value}_y_lim_min'], st.session_state[f'{value}_y_lim_max'])
+
         plt.savefig(st.session_state[f"{value}_img"], format='png', dpi=600)
 
         st.session_state[f"{value}_plot_show"] = True
@@ -463,6 +518,9 @@ if selected == "Single File Analysis":
                 with st.expander("Data Modifier"):
                     modifier_selector_columns, modifier_columns = modifier_options("single", data.shape[0])
 
+                with st.expander("Axis Limitation"):
+                    limit_options("single")
+
                 if st.button("Plot XVG"):
                     plotting("single", data, modifier_selector_columns)
 
@@ -502,6 +560,9 @@ if selected == "Comparison Analysis":
 
             with st.expander("Data Modifier"):
                 modifier_selector_columns, modifier_columns = modifier_options("single", data1.shape[0])
+
+            with st.expander("Axis Limitation"):
+                limit_options("single")
 
             if st.button("Plot XVG"):
                 plotting_comparison("single", data1, data2, modifier_selector_columns)
@@ -602,6 +663,9 @@ elif selected == "Folder Analysis":
                     with st.expander("Data Modifier"):
                         modifier_selector_columns, modifier_columns = modifier_options("multiple", data.shape[0])
 
+                    with st.expander("Axis Limitation"):
+                        limit_options("multiple")
+
                     if st.button("Plot XVG"):
                         plotting("multiple", data, modifier_selector_columns)
 
@@ -680,6 +744,9 @@ elif selected == "Folder Analysis":
 
                         with st.expander("Data Modifier"):
                             modifier_selector_columns, modifier_columns = modifier_options("multiple", data.shape[0])
+
+                        with st.expander("Axis Limitation"):
+                            limit_options("multiple")
 
                         if st.button("Plot XVG"):
                             plotting("multiple", data, modifier_selector_columns)
