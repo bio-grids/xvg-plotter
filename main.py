@@ -1,16 +1,16 @@
-import os
 import io
+import os
 import pathlib
 from io import StringIO, BytesIO
 from pathlib import Path
 from typing import Literal, List
 
 import matplotlib.pyplot as plt
-import streamlit as st
-from streamlit_option_menu import option_menu
-import pandas as pd
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
+import streamlit as st
+from streamlit_option_menu import option_menu
 
 from utils import parse_xvg, legend_locations
 
@@ -88,6 +88,12 @@ if "single_y_lim_max" not in st.session_state:
     st.session_state.single_y_lim_max = 1
 if "single_csv_data" not in st.session_state:
     st.session_state.single_csv_data = []
+if "single_line_opacity_show" not in st.session_state:
+    st.session_state.single_line_opacity_show = False
+if "single_line_opacity" not in st.session_state:
+    st.session_state.single_line_opacity = 1.00
+if "single_line2_opacity" not in st.session_state:
+    st.session_state.single_line2_opacity = 1.00
 
 if "multiple_img" not in st.session_state:
     st.session_state.multiple_img = BytesIO()
@@ -165,6 +171,10 @@ if "multiple_y_lim_max" not in st.session_state:
     st.session_state.multiple_y_lim_max = 1
 if "multiple_csv_data" not in st.session_state:
     st.session_state.multiple_csv_data = []
+if "multiple_line_opacity_show" not in st.session_state:
+    st.session_state.multiple_line_opacity_show = False
+if "multiple_line_opacity" not in st.session_state:
+    st.session_state.multiple_line_opacity = 1.00
 
 if "docker_project_path" not in st.session_state:
     st.session_state.docker_project_path: pathlib.Path = Path("/projects")
@@ -380,6 +390,27 @@ def limit_options(value: str):
     return x_columns, y_columns
 
 
+def opacity_options(value: str):
+    if selected == "Comparison Analysis":
+        columns = st.columns([1, 1, 1])
+        columns[0].checkbox(label="Reduce Opacity?", key=f"{value}_line_opacity_show")
+        columns[1].slider(label="Line 1 Opacity", min_value=0.00, max_value=1.00, step=0.01,
+                          value=st.session_state[f"{value}_line_opacity"],
+                          key=f"{value}_line_opacity")
+        columns[2].slider(label="Line 2 Opacity", min_value=0.00, max_value=1.00, step=0.01,
+                          value=st.session_state[f"{value}_line2_opacity"],
+                          key=f"{value}_line2_opacity")
+
+    else:
+        columns = st.columns([1, 1])
+        columns[0].checkbox(label="Reduce Opacity?", key=f"{value}_line_opacity_show")
+        columns[1].slider(label="Line Opacity", min_value=0.00, max_value=1.00, step=0.01,
+                          value=st.session_state[f"{value}_line_opacity"],
+                          key=f"{value}_line_opacity")
+
+    return columns
+
+
 def plotting(value: str, data: npt.NDArray, columns):
     if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
         f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
@@ -399,15 +430,18 @@ def plotting(value: str, data: npt.NDArray, columns):
             new_data = data
             if st.session_state[f"{value}_modify_data"]:
                 new_data = new_data[
-                       st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:st.session_state[
-                           f"{value}_modify_step"]]
+                           st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                           st.session_state[
+                               f"{value}_modify_step"]]
 
             st.session_state[f"{value}_csv_data"] = new_data
 
             data_shape = new_data.shape[0]
 
             plt.plot(new_data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
-                     new_data[..., y] * y_multiplier)
+                     new_data[..., y] * y_multiplier,
+                     alpha=st.session_state[f"{value}_line_opacity"] if st.session_state[
+                         f"{value}_line_opacity_show"] else 1)
 
         columns[2].write(f"Current data points: {data_shape}")
 
@@ -454,19 +488,24 @@ def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, colum
             new_data1 = data1
             if st.session_state[f"{value}_modify_data"]:
                 new_data = new_data[
-                       st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:st.session_state[
-                           f"{value}_modify_step"]]
+                           st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                           st.session_state[
+                               f"{value}_modify_step"]]
                 new_data1 = new_data1[
-                        st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
-                        st.session_state[
-                            f"{value}_modify_step"]]
+                            st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                            st.session_state[
+                                f"{value}_modify_step"]]
 
             data_shape = new_data.shape[0]
 
             plt.plot(new_data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
-                     new_data[..., y] * y_multiplier)
+                     new_data[..., y] * y_multiplier,
+                     alpha=st.session_state[f"{value}_line_opacity"] if st.session_state[
+                         f"{value}_line_opacity_show"] else 1)
             plt.plot(new_data1[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
-                     new_data1[..., y] * y_multiplier)
+                     new_data1[..., y] * y_multiplier,
+                     alpha=st.session_state[f"{value}_line2_opacity"] if st.session_state[
+                         f"{value}_line_opacity_show"] else 1)
 
             st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1))
 
@@ -564,6 +603,9 @@ if selected == "Single File Analysis":
                 with st.expander("Axis Limitation"):
                     limit_options("single")
 
+                with st.expander("Opacity"):
+                    opacity_options("single")
+
                 if st.button("Plot XVG"):
                     plotting("single", data, modifier_selector_columns)
 
@@ -606,6 +648,9 @@ if selected == "Comparison Analysis":
 
             with st.expander("Axis Limitation"):
                 limit_options("single")
+
+            with st.expander("Opacity"):
+                opacity_options("single")
 
             if st.button("Plot XVG"):
                 plotting_comparison("single", data1, data2, modifier_selector_columns)
@@ -709,6 +754,9 @@ elif selected == "Folder Analysis":
                     with st.expander("Axis Limitation"):
                         limit_options("multiple")
 
+                    with st.expander("Opacity"):
+                        opacity_options("multiple")
+
                     if st.button("Plot XVG"):
                         plotting("multiple", data, modifier_selector_columns)
 
@@ -790,6 +838,9 @@ elif selected == "Folder Analysis":
 
                         with st.expander("Axis Limitation"):
                             limit_options("multiple")
+
+                        with st.expander("Opacity"):
+                            opacity_options("multiple")
 
                         if st.button("Plot XVG"):
                             plotting("multiple", data, modifier_selector_columns)
