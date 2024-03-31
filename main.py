@@ -564,7 +564,10 @@ def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, colum
                      alpha=st.session_state[f"{value}_line2_opacity"] if st.session_state[
                          f"{value}_line_opacity_show"] else 1)
 
-            st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1))
+            if len(new_data) == len(new_data1):
+                st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1))
+            else:
+                st.session_state[f"{value}_csv_data"] = []
 
         columns[2].write(f"Current data points: {data_shape}")
 
@@ -634,7 +637,10 @@ def plotting_comparison3(value: str, data: npt.NDArray, data1: npt.NDArray, data
                      alpha=st.session_state[f"{value}_line3_opacity"] if st.session_state[
                          f"{value}_line_opacity_show"] else 1)
 
-            st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1, new_data2))
+            if len(new_data) == len(new_data1) == len(new_data2):
+                st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1, new_data2))
+            else:
+                st.session_state[f"{value}_csv_data"] = []
 
         columns[2].write(f"Current data points: {data_shape}")
 
