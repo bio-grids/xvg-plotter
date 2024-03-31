@@ -124,14 +124,14 @@ You can plot XVG file singly or select folder for ease selection.
 ## Citation
 
 ```text
-@misc{noor_2024_10576496,
+@misc{noor_2024_10901374,
   author       = {Noor, Dilwar Hossain},
   title        = {XVG Plotter},
-  month        = jan,
+  month        = mar,
   year         = 2024,
   publisher    = {Zenodo},
-  version      = {0.5.0},
-  doi          = {10.5281/zenodo.10576496},
-  url          = {https://doi.org/10.5281/zenodo.10576496}
+  version      = {0.13.1},
+  doi          = {10.5281/zenodo.10901374},
+  url          = {https://doi.org/10.5281/zenodo.10901374}
 }
 ```
