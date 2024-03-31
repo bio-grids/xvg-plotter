@@ -94,6 +94,8 @@ if "single_line_opacity" not in st.session_state:
     st.session_state.single_line_opacity = 1.00
 if "single_line2_opacity" not in st.session_state:
     st.session_state.single_line2_opacity = 1.00
+if "single_line3_opacity" not in st.session_state:
+    st.session_state.single_line3_opacity = 1.00
 
 if "multiple_img" not in st.session_state:
     st.session_state.multiple_img = BytesIO()
@@ -196,7 +198,7 @@ hide_st_style = """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 selected = option_menu(
-    None, ["Single File Analysis", "Comparison Analysis", "Folder Analysis", "Documentation"],
+    None, ["Single File Analysis", "Comparison Analysis (2)", "Comparison Analysis (3)", "Folder Analysis", "Documentation"],
     icons=['cloud-upload', "arrows-collapse-vertical", "list-task", "file-earmark-medical"],
     menu_icon="cast", default_index=0, orientation="horizontal"
 )
@@ -281,6 +283,48 @@ def main_options_comparison(value: str, xvg, string_data1: str, string_data2: st
             y_index__))
 
     return data, data2
+
+
+def main_options_comparison3(value: str, xvg, string_data1: str, string_data2: str, string_data3: str):
+    metadata, data = parse_xvg(string_data1)
+    metadata2, data2 = parse_xvg(string_data2)
+    metadata3, data3 = parse_xvg(string_data3)
+
+    st.session_state[f"{value}_title"] = metadata["title"]
+    st.session_state[f"{value}_series"] = metadata["labels"]["series"]
+    st.session_state[f"{value}_xaxis"] = metadata["labels"]["xaxis"]
+    st.session_state[f"{value}_yaxis"] = metadata["labels"]["yaxis"]
+
+    xvg_file_value: str = ""
+    if value == "single":
+        st.session_state[f"{value}_xvg_file_name"] = os.path.splitext(xvg.name)[0]
+        xvg_file_value = st.session_state[f"{value}_xvg_file_name"]
+    elif value == "multiple":
+        xvg_file_value = os.path.splitext(st.session_state[f"{value}_xvg_file_name"])[0]
+
+    file_name_columns = st.columns([1])
+    file_name_columns[0].text_input(label="File Name", value=xvg_file_value,
+                                    key=f"{value}_file_name")
+
+    axis_columns = st.columns([1, 2])
+    x_index_ = axis_columns[0].radio("Select X Axis",
+                                     [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"],
+                                     index=0)
+    y_index__ = axis_columns[1].multiselect(
+        'Select Y Axes',
+        [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"],
+        default=([st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"])[
+            1 if len(st.session_state[f"{value}_series"]) else 0]
+    )
+
+    st.session_state[f"{value}_x_index"] = (
+            [st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"]).index(
+        x_index_)
+    st.session_state[f"{value}_yaxes"] = list(
+        map(lambda z: ([st.session_state[f"{value}_xaxis"]] + st.session_state[f"{value}_series"]).index(z),
+            y_index__))
+
+    return data, data2, data3
 
 
 def label_options(value: str):
@@ -391,7 +435,7 @@ def limit_options(value: str):
 
 
 def opacity_options(value: str):
-    if selected == "Comparison Analysis":
+    if selected == "Comparison Analysis (2)":
         columns = st.columns([1, 1, 1])
         columns[0].checkbox(label="Reduce Opacity?", key=f"{value}_line_opacity_show")
         columns[1].slider(label="Line 1 Opacity", min_value=0.00, max_value=1.00, step=0.01,
@@ -400,6 +444,19 @@ def opacity_options(value: str):
         columns[2].slider(label="Line 2 Opacity", min_value=0.00, max_value=1.00, step=0.01,
                           value=st.session_state[f"{value}_line2_opacity"],
                           key=f"{value}_line2_opacity")
+
+    if selected == "Comparison Analysis (3)":
+        columns = st.columns([1, 1, 1, 1])
+        columns[0].checkbox(label="Reduce Opacity?", key=f"{value}_line_opacity_show")
+        columns[1].slider(label="Line 1 Opacity", min_value=0.00, max_value=1.00, step=0.01,
+                          value=st.session_state[f"{value}_line_opacity"],
+                          key=f"{value}_line_opacity")
+        columns[2].slider(label="Line 2 Opacity", min_value=0.00, max_value=1.00, step=0.01,
+                          value=st.session_state[f"{value}_line2_opacity"],
+                          key=f"{value}_line2_opacity")
+        columns[3].slider(label="Line 3 Opacity", min_value=0.00, max_value=1.00, step=0.01,
+                          value=st.session_state[f"{value}_line3_opacity"],
+                          key=f"{value}_line3_opacity")
 
     else:
         columns = st.columns([1, 1])
@@ -529,6 +586,76 @@ def plotting_comparison(value: str, data: npt.NDArray, data1: npt.NDArray, colum
         st.session_state[f"{value}_plot_show"] = True
 
 
+def plotting_comparison3(value: str, data: npt.NDArray, data1: npt.NDArray, data2: npt.NDArray, columns):
+    if st.session_state[f"{value}_file_name"] and st.session_state[f"{value}_xaxis"] and st.session_state[
+        f"{value}_yaxis"] and st.session_state[f"{value}_label_size"]:
+        data_shape = 0
+
+        for y in st.session_state[f"{value}_yaxes"]:
+            if st.session_state[f"{value}_multiply_y"]:
+                y_multiplier = st.session_state[f"{value}_y_multiplication_value"]
+            else:
+                y_multiplier = 1
+
+            if st.session_state[f"{value}_multiply_x"]:
+                x_multiplier = st.session_state[f"{value}_x_multiplication_value"]
+            else:
+                x_multiplier = 1
+
+            new_data = data
+            new_data1 = data1
+            new_data2 = data2
+            if st.session_state[f"{value}_modify_data"]:
+                new_data = new_data[
+                           st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                           st.session_state[
+                               f"{value}_modify_step"]]
+                new_data1 = new_data1[
+                            st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                            st.session_state[
+                                f"{value}_modify_step"]]
+                new_data2 = new_data2[
+                            st.session_state[f"{value}_modify_min"]:st.session_state[f"{value}_modify_max"]:
+                            st.session_state[
+                                f"{value}_modify_step"]]
+
+            data_shape = new_data.shape[0]
+
+            plt.plot(new_data[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     new_data[..., y] * y_multiplier,
+                     alpha=st.session_state[f"{value}_line_opacity"] if st.session_state[
+                         f"{value}_line_opacity_show"] else 1)
+            plt.plot(new_data1[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     new_data1[..., y] * y_multiplier,
+                     alpha=st.session_state[f"{value}_line2_opacity"] if st.session_state[
+                         f"{value}_line_opacity_show"] else 1)
+            plt.plot(new_data2[..., st.session_state[f"{value}_x_index"]] * x_multiplier,
+                     new_data2[..., y] * y_multiplier,
+                     alpha=st.session_state[f"{value}_line3_opacity"] if st.session_state[
+                         f"{value}_line_opacity_show"] else 1)
+
+            st.session_state[f"{value}_csv_data"] = np.hstack((new_data, new_data1, new_data2))
+
+        columns[2].write(f"Current data points: {data_shape}")
+
+        if st.session_state[f"{value}_legend_show"]:
+            plt.legend(st.session_state[f"{value}_series"], loc=st.session_state[f"{value}_legend_loc"],
+                       fontsize=st.session_state[f"{value}_legend_size"])
+        if st.session_state[f"{value}_title_show"]:
+            plt.title(label=st.session_state[f"{value}_title_updated"],
+                      loc=st.session_state[f"{value}_title_loc"],
+                      fontdict={"fontsize": st.session_state[f"{value}_title_size"]}, pad=16)
+        xaxis_updated = st.session_state[f'{value}_xaxis_updated']
+        yaxis_updated = st.session_state[f'{value}_yaxis_updated']
+        plt.xlabel(fr"{xaxis_updated}",
+                   fontsize=st.session_state[f"{value}_label_size"])
+        plt.ylabel(fr"{yaxis_updated}",
+                   fontsize=st.session_state[f"{value}_label_size"])
+        plt.savefig(st.session_state[f"{value}_img"], format='png', dpi=600)
+
+        st.session_state[f"{value}_plot_show"] = True
+
+
 def plotter(value: str):
     with st.container(border=True):
         plot_columns = st.columns([1, 1, 1])
@@ -556,7 +683,9 @@ def plotter(value: str):
 
             st.pyplot(plt)
 
-            if selected != "Comparison Analysis":
+            if selected == "Comparison Analysis (2)" or selected == "Comparison Analysis (3)":
+                pass
+            else:
                 if st.button("Show Data Points"):
                     raw_range = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]
 
@@ -612,7 +741,7 @@ if selected == "Single File Analysis":
     with wrapper_columns[1]:
         plotter("single")
 
-if selected == "Comparison Analysis":
+if selected == "Comparison Analysis (2)":
     wrapper_columns = st.columns([3, 2])
 
     with wrapper_columns[0]:
@@ -657,6 +786,56 @@ if selected == "Comparison Analysis":
 
     with wrapper_columns[1]:
         plotter("single")
+
+if selected == "Comparison Analysis (3)":
+    wrapper_columns = st.columns([3, 2])
+
+    with wrapper_columns[0]:
+        with st.container(border=True):
+            files = st.columns([1, 1, 1])
+            xvg1 = files[0].file_uploader(label="Upload XVG File 1", accept_multiple_files=False, type=["xvg"])
+            xvg2 = files[1].file_uploader(label="Upload XVG File 2", accept_multiple_files=False, type=["xvg"])
+            xvg3 = files[2].file_uploader(label="Upload XVG File 3", accept_multiple_files=False, type=["xvg"])
+
+        if xvg1 is not None and xvg2 is not None and xvg3 is not None:
+            with st.expander("Main Options", expanded=True):
+                stringio1 = StringIO(xvg1.getvalue().decode("utf-8"))
+                stringio2 = StringIO(xvg2.getvalue().decode("utf-8"))
+                stringio3 = StringIO(xvg3.getvalue().decode("utf-8"))
+
+                string_data1 = stringio1.read()
+                string_data2 = stringio2.read()
+                string_data3 = stringio3.read()
+
+                data1, data2, data3 = main_options_comparison3("single", xvg1, string_data1, string_data2, string_data3)
+
+            with st.expander("Labels"):
+                label_options("single")
+
+            with st.expander("Title"):
+                title_options("single")
+
+            with st.expander("Legends"):
+                legend_options("single")
+
+            with st.expander("Axis Multiplication"):
+                axis_multiplication_options("single")
+
+            with st.expander("Data Modifier"):
+                modifier_selector_columns, modifier_columns = modifier_options("single", data1.shape[0])
+
+            with st.expander("Axis Limitation"):
+                limit_options("single")
+
+            with st.expander("Opacity"):
+                opacity_options("single")
+
+            if st.button("Plot XVG"):
+                plotting_comparison3("single", data1, data2, data3, modifier_selector_columns)
+
+    with wrapper_columns[1]:
+        plotter("single")
+
 
 elif selected == "Folder Analysis":
     IS_DOCKER = int(os.environ.get('IS_DOCKER', "0"))
