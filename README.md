@@ -1,6 +1,6 @@
 # XVG Plotter
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10576496.svg)](https://doi.org/10.5281/zenodo.10576495)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10576495.svg)](https://doi.org/10.5281/zenodo.10576495)
 
 ## Introduction
 
