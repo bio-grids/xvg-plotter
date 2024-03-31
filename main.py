@@ -445,7 +445,7 @@ def opacity_options(value: str):
                           value=st.session_state[f"{value}_line2_opacity"],
                           key=f"{value}_line2_opacity")
 
-    if selected == "Comparison Analysis (3)":
+    elif selected == "Comparison Analysis (3)":
         columns = st.columns([1, 1, 1, 1])
         columns[0].checkbox(label="Reduce Opacity?", key=f"{value}_line_opacity_show")
         columns[1].slider(label="Line 1 Opacity", min_value=0.00, max_value=1.00, step=0.01,
